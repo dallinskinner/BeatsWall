@@ -20,6 +20,7 @@ enum WallpaperCatalog {
         WinterCollection.collection,
         DeepSeaCollection.collection,
         MinimalCollection.collection,
+        CyberpunkCollection.collection,
     ]
 
     static let defaultWallpaperID = "claude.spark-bloom"
