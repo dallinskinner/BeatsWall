@@ -134,11 +134,11 @@ final class LyricsController {
 #if DEBUG
 extension LyricsController {
     /// Loads sample lyrics without a player, for previews and visual checks.
-    func loadPreview(track: NowPlaying, lines: [LyricLine]) {
+    func loadPreview(track: NowPlaying, lines: [LyricLine], epoch: Date = Date()) {
         self.track = track
         self.lines = lines
-        readAt = Date()
-        status = .showing
+        readAt = epoch
+        status = lines.isEmpty ? .notFound : .showing
     }
 }
 #endif

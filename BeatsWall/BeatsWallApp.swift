@@ -33,6 +33,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var desktop: DesktopWallpaperController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        if TrailerRenderer.runIfRequested() { return }
+        #endif
         desktop = DesktopWallpaperController(appState: appState)
         appState.start()
     }

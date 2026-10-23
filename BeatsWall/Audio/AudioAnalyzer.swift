@@ -14,6 +14,7 @@ nonisolated final class AudioAnalyzer: @unchecked Sendable {
     private static let log2n = vDSP_Length(10)
 
     private let store: AudioFeaturesStore
+    private let clock: @Sendable () -> Double
     private let fftSetup: FFTSetup
     private let window: [Float]
 
@@ -41,8 +42,9 @@ nonisolated final class AudioAnalyzer: @unchecked Sendable {
     private var lastBeatAt = -Double.infinity
     private var beatIntervals: [Double] = []
 
-    init(store: AudioFeaturesStore) {
+    init(store: AudioFeaturesStore, clock: @escaping @Sendable () -> Double = audioClock) {
         self.store = store
+        self.clock = clock
         fftSetup = vDSP_create_fftsetup(Self.log2n, FFTRadix(kFFTRadix2))!
         window = vDSP.window(ofType: Float.self, usingSequence: .hanningDenormalized, count: Self.fftSize, isHalfWindow: false)
     }
@@ -149,7 +151,7 @@ nonisolated final class AudioAnalyzer: @unchecked Sendable {
         bassHistory[bassHistoryIndex] = rawBass
         bassHistoryIndex = (bassHistoryIndex + 1) % bassHistory.count
 
-        let now = audioClock()
+        let now = clock()
         guard rawBass > average * 1.4,
               rawBass > bassPeak * 0.25,
               now - lastBeatAt > 0.28 else { return false }

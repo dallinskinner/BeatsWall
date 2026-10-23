@@ -11,51 +11,63 @@ struct LyricsOverlay: View {
     let lyrics: LyricsController
     let source: any AudioFeatureSource
     let isPaused: Bool
+    /// When set, show exactly this moment instead of following the clock (offline rendering).
+    var fixedDate: Date? = nil
 
     var body: some View {
         GeometryReader { geometry in
             let unit = min(geometry.size.width, geometry.size.height)
-            TimelineView(.animation(minimumInterval: 1 / 30, paused: isPaused)) { timeline in
-                let lyric = lyrics.lyric(at: timeline.date)
-                let pulse = CGFloat(source.read().beatPulse)
-                VStack(spacing: unit * 0.025) {
-                    if let lyric {
-                        currentLine(lyric.current.text, progress: lyric.progress, unit: unit)
-                            .scaleEffect(1 + 0.025 * pulse)
-                            .id(lyric.current.time)
-                            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: unit * 0.03)), removal: .opacity))
-                        if let next = lyric.next, !next.text.isEmpty {
-                            Text(next.text)
-                                .font(.system(size: unit * 0.032, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .id(next.time)
-                                .transition(.opacity)
-                        }
-                    } else if let track = lyrics.track, showsTitleCard(at: timeline.date) {
-                        titleCard(track, unit: unit)
-                            .transition(.opacity)
-                    }
+            if let fixedDate {
+                lines(at: fixedDate, unit: unit)
+            } else {
+                TimelineView(.animation(minimumInterval: 1 / 30, paused: isPaused)) { timeline in
+                    lines(at: timeline.date, unit: unit)
                 }
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.6)
-                .shadow(color: .black.opacity(0.6), radius: unit * 0.01)
-                .padding(.horizontal, unit * 0.05)
-                .padding(.vertical, unit * 0.03)
-                // A soft dark haze behind the words keeps them readable on light wallpapers too.
-                .background {
-                    if lyric != nil || lyrics.track != nil {
-                        RoundedRectangle(cornerRadius: unit * 0.05)
-                            .fill(.black.opacity(0.32))
-                            .blur(radius: unit * 0.025)
-                    }
-                }
-                .padding(.horizontal, unit * 0.08)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.easeOut(duration: 0.3), value: lyric?.current.time)
             }
         }
         .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func lines(at date: Date, unit: CGFloat) -> some View {
+        let lyric = lyrics.lyric(at: date)
+        let pulse = CGFloat(source.read().beatPulse)
+        VStack(spacing: unit * 0.025) {
+            if let lyric {
+                currentLine(lyric.current.text, progress: lyric.progress, unit: unit)
+                    .scaleEffect(1 + 0.025 * pulse)
+                    .id(lyric.current.time)
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: unit * 0.03)), removal: .opacity))
+                if let next = lyric.next, !next.text.isEmpty {
+                    Text(next.text)
+                        .font(.system(size: unit * 0.032, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .id(next.time)
+                        .transition(.opacity)
+                }
+            } else if let track = lyrics.track, showsTitleCard(at: date) {
+                titleCard(track, unit: unit)
+                    .transition(.opacity)
+            }
+        }
+        .multilineTextAlignment(.center)
+        .lineLimit(2)
+        .minimumScaleFactor(0.6)
+        .shadow(color: .black.opacity(0.6), radius: unit * 0.01)
+        .padding(.horizontal, unit * 0.05)
+        .padding(.vertical, unit * 0.03)
+        // A soft dark haze behind the words keeps them readable on light wallpapers too.
+        .background {
+            if lyric != nil || lyrics.track != nil {
+                RoundedRectangle(cornerRadius: unit * 0.05)
+                    .fill(.black.opacity(0.32))
+                    .blur(radius: unit * 0.025)
+            }
+        }
+        .padding(.horizontal, unit * 0.08)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Offline frames are captured one at a time, so animating would catch lines mid-fade.
+        .animation(fixedDate == nil ? .easeOut(duration: 0.3) : nil, value: lyric?.current.time)
     }
 
     private func currentLine(_ text: String, progress: Double, unit: CGFloat) -> some View {

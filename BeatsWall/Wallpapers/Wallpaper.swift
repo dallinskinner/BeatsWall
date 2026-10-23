@@ -11,6 +11,9 @@ struct WallpaperContext {
     let isPaused: Bool
     /// True for small thumbnails in the browser, so wallpapers can draw less.
     let isPreview: Bool
+    /// When set, draw exactly this moment instead of following the display clock
+    /// (used to render video offline).
+    var renderTime: Double? = nil
 }
 
 struct Wallpaper: Identifiable {
@@ -59,11 +62,15 @@ struct AudioTimeline<Content: View>: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: context.isPreview ? 1 / 30 : 1 / 60, paused: context.isPaused)) { timeline in
-            content(AudioFrame(
-                time: timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 86_400),
-                audio: context.source.read()
-            ))
+        if let renderTime = context.renderTime {
+            content(AudioFrame(time: renderTime, audio: context.source.read()))
+        } else {
+            TimelineView(.animation(minimumInterval: context.isPreview ? 1 / 30 : 1 / 60, paused: context.isPaused)) { timeline in
+                content(AudioFrame(
+                    time: timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 86_400),
+                    audio: context.source.read()
+                ))
+            }
         }
     }
 }

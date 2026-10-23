@@ -18,9 +18,15 @@ nonisolated final class AudioFeaturesStore: AudioFeatureSource {
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
+    private let clock: @Sendable () -> Double
+
+    /// `clock` is injectable so offline rendering can run on video time.
+    init(clock: @escaping @Sendable () -> Double = audioClock) {
+        self.clock = clock
+    }
 
     func publish(_ features: AudioFeatures, beat: Bool, hasSignal: Bool) {
-        let now = audioClock()
+        let now = clock()
         state.withLock { state in
             state.features = features
             state.updatedAt = now
@@ -30,7 +36,7 @@ nonisolated final class AudioFeaturesStore: AudioFeatureSource {
     }
 
     func read() -> AudioFeatures {
-        let now = audioClock()
+        let now = clock()
         let state = state.withLock { $0 }
         var features = state.features
 
@@ -50,6 +56,6 @@ nonisolated final class AudioFeaturesStore: AudioFeatureSource {
     }
 
     var secondsSinceSignal: Double {
-        audioClock() - state.withLock { $0.lastSignalAt }
+        clock() - state.withLock { $0.lastSignalAt }
     }
 }
