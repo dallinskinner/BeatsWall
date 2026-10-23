@@ -10,6 +10,7 @@ enum WallpaperCatalog {
     static let collections: [WallpaperCollection] = [
         ClaudeCollection.collection,
         SkateboardingCollection.collection,
+        SynthwaveCollection.collection,
     ]
 
     static let defaultWallpaperID = "claude.spark-bloom"
