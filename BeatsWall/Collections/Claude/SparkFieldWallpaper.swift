@@ -85,8 +85,8 @@ private final class SparkFieldSimulation {
     }
 
     private(set) var particles: [Particle]
-    private var lastTime: Double?
-    private var lastBeatCount: Int?
+    private let clock = PhaseClock()
+    private var beatEdge = BeatEdge()
 
     init(count: Int) {
         particles = (0..<count).map { _ in
@@ -96,11 +96,9 @@ private final class SparkFieldSimulation {
 
     func step(frame: AudioFrame, aspect: Double) {
         let audio = frame.audio
-        let dt = lastTime.map { min(max(frame.time - $0, 0), 1 / 20) } ?? 0
-        lastTime = frame.time
-
-        let isBeat = lastBeatCount.map { $0 != audio.beatCount } ?? false
-        lastBeatCount = audio.beatCount
+        clock.advance(to: frame.time)
+        let dt = min(clock.deltaTime, 1 / 20)
+        let isBeat = beatEdge.isNewBeat(audio)
 
         let speed = 0.015 + 0.12 * Double(audio.treble) + 0.05 * Double(audio.mid)
         let burst = 0.25 + 0.6 * Double(audio.bass)

@@ -21,6 +21,6 @@ enum ClaudeTheme {
 
     /// Static paper grain that keeps flat fills from looking digital.
     static func grain(amount: Float = 0.035) -> Shader {
-        ShaderLibrary.claudeGrain(.float(amount))
+        ShaderLibrary.grain(.float(amount))
     }
 }

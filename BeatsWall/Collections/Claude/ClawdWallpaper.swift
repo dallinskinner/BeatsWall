@@ -160,7 +160,7 @@ struct ClawdWallpaper: View {
                     y: floorY + pixel * 1.2 + CGFloat(row) * tile,
                     width: tile - gap, height: tile - gap
                 )
-                if hash(col + row * 997, audio.beatCount) < 0.25 {
+                if hash01(col + row * 997, audio.beatCount) < 0.25 {
                     lit.addRect(rect)
                 } else {
                     unlit.addRect(rect)
@@ -182,22 +182,10 @@ struct ClawdWallpaper: View {
                 y: size.height * 0.56 - age * unit * 0.12
             )
             var path = Path()
-            for (row, line) in Self.note.enumerated() {
-                for (col, character) in line.enumerated() where character == "#" {
-                    path.addRect(CGRect(x: origin.x + CGFloat(col) * notePixel, y: origin.y + CGFloat(row) * notePixel, width: notePixel + 0.5, height: notePixel + 0.5))
-                }
-            }
+            path.addPixelSprite(Self.note, origin: origin, pixelWidth: notePixel)
             let color = note.seed > 0.5 ? ClaudeTheme.cream : ClaudeTheme.terracotta
             graphics.fill(path, with: .color(color.opacity(0.75 * fade)))
         }
-    }
-
-    private func hash(_ a: Int, _ b: Int) -> Double {
-        var x = UInt64(truncatingIfNeeded: a &* 73_856_093 ^ b &* 19_349_663)
-        x ^= x >> 13
-        x &*= 0x5bd1_e995
-        x ^= x >> 15
-        return Double(x % 1000) / 1000
     }
 }
 
@@ -213,14 +201,12 @@ private final class ClawdScene {
     static let noteLifetime = 2.6
 
     private(set) var notes: [Note] = []
-    private var lastBeatCount: Int?
+    private var beatEdge = BeatEdge()
 
     func step(frame: AudioFrame) {
-        let beatCount = frame.audio.beatCount
-        if let lastBeatCount, beatCount != lastBeatCount, beatCount % 2 == 0 {
+        if beatEdge.isNewBeat(frame.audio), frame.audio.beatCount % 2 == 0 {
             notes.append(Note(born: frame.time, side: Bool.random() ? -1 : 1, seed: .random(in: 0...1)))
         }
-        lastBeatCount = beatCount
         notes.removeAll { frame.time - $0.born > Self.noteLifetime || frame.time < $0.born }
     }
 }

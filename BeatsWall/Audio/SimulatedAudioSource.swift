@@ -21,7 +21,8 @@ nonisolated final class SimulatedAudioSource: AudioFeatureSource {
         var features = AudioFeatures()
         features.bpm = 120
         features.beatCount = Int(beats)
-        features.beatPulse = Float(exp(-secondsSinceBeat * 4.5))
+        features.secondsSinceBeat = secondsSinceBeat
+        features.beatPulse = Float(exp(-secondsSinceBeat * AudioFeatures.beatDecay))
         features.bass = clamp(0.25 + 0.65 * Double(features.beatPulse) * (0.6 + 0.4 * swell))
         features.mid = clamp((0.45 + 0.2 * sin(time * 1.7) + 0.15 * sin(time * 0.53)) * (0.7 + 0.3 * swell))
         features.treble = clamp(0.35 + 0.15 * sin(time * 4.3 + 1) + 0.1 * sin(time * 9.1))

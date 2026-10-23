@@ -7,7 +7,7 @@ import SwiftUI
 
 struct ThinkingWallpaper: View {
     let context: WallpaperContext
-    @State private var clock = ThinkingClock()
+    @State private var clock = PhaseClock()
 
     var body: some View {
         AudioTimeline(context: context) { frame in
@@ -88,19 +88,5 @@ struct ThinkingWallpaper: View {
                 with: .color(ClaudeTheme.terracotta.mix(with: ClaudeTheme.cream, by: 0.35 * sequence))
             )
         }
-    }
-}
-
-/// Integrates phase over time so changing speed never makes the ripple jump.
-private final class ThinkingClock {
-    private var phase: Double = 0
-    private var lastTime: Double?
-
-    func advance(to time: Double, speed: Double) -> Double {
-        if let lastTime {
-            phase += min(max(time - lastTime, 0), 0.1) * speed
-        }
-        lastTime = time
-        return phase
     }
 }

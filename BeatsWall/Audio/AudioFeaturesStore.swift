@@ -44,7 +44,8 @@ nonisolated final class AudioFeaturesStore: AudioFeatureSource {
             features.treble *= fade
             features.spectrum = features.spectrum.map { $0 * fade }
         }
-        features.beatPulse = Float(exp(-(now - state.lastBeatAt) * 4.5))
+        features.secondsSinceBeat = now - state.lastBeatAt
+        features.beatPulse = Float(exp(-features.secondsSinceBeat * AudioFeatures.beatDecay))
         return features
     }
 

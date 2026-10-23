@@ -28,7 +28,7 @@ struct ClaudeTerminalWallpaper: View {
                         .shadow(color: ClaudeTheme.terracotta.opacity(0.25 + 0.3 * Double(frame.audio.beatPulse)), radius: fontSize * 0.8)
                 }
                 .frame(width: size.width, height: size.height)
-                .colorEffect(ShaderLibrary.claudeScanlines(.float(frame.time), .float(0.16), .float(max(2, fontSize / 6))))
+                .colorEffect(ShaderLibrary.scanlines(.float(frame.time), .float(0.16), .float(max(2, fontSize / 6))))
             }
         }
     }
