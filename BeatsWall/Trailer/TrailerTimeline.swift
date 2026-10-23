@@ -66,9 +66,9 @@ struct TrailerTimeline {
             _ = index
         }
 
-        // Shuffle demo: a new wallpaper on every beat for about seven seconds.
+        // Shuffle demo: a new wallpaper on every beat for about six seconds.
         let shuffleStart = shots.last!.end
-        let shuffleEnd = bars[bar(atOrAfter: shuffleStart + 4.5)]
+        let shuffleEnd = bars[bar(atOrAfter: shuffleStart + 5.5)]
         let beatsInShuffle = grid.filter { $0 >= shuffleStart - 0.01 && $0 < shuffleEnd - 0.01 }
         for (index, start) in beatsInShuffle.enumerated() {
             let end = index + 1 < beatsInShuffle.count ? beatsInShuffle[index + 1] : shuffleEnd
@@ -76,7 +76,8 @@ struct TrailerTimeline {
         }
 
         // Lyrics demo, then the end card.
-        let lyricsEnd = max(min(bars[bar(atOrAfter: shuffleEnd + 4.5)], Self.length - 3), shuffleEnd + 3)
+        // Lyrics run until about three seconds from the end, leaving room for the end card.
+        let lyricsEnd = max(min(bars[bar(atOrAfter: Self.length - 3.3)], Self.length - 2.5), shuffleEnd + 3)
         shots.append(TrailerShot(kind: .lyrics, wallpaperID: "tokyo.rainy-crossing", start: shuffleEnd, end: lyricsEnd))
         shots.append(TrailerShot(kind: .endCard, wallpaperID: "minimal.gradient-blobs", start: lyricsEnd, end: Self.length))
         self.shots = shots

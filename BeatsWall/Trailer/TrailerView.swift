@@ -51,7 +51,7 @@ struct TrailerView: View {
                 case .tour(let collection):
                     chip(collection: collection, name: wallpaper.name, unit: unit, appear: time - shot.start)
                 case .shuffle:
-                    caption("Shuffle", detail: "A new wallpaper on every bar", symbol: "shuffle", unit: unit)
+                    caption("Shuffle", detail: "Wallpapers switch in time with the music", symbol: "shuffle", unit: unit)
                 case .lyrics:
                     LyricsOverlay(
                         lyrics: model.lyrics, source: model.source, isPaused: false,
