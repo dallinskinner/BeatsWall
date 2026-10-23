@@ -90,3 +90,16 @@ nonisolated func smoothstep(_ edge0: Double, _ edge1: Double, _ x: Double) -> Do
     let t = min(max((x - edge0) / (edge1 - edge0), 0), 1)
     return t * t * (3 - 2 * t)
 }
+
+/// Two-bone IK: where a knee or elbow sits so both segments reach from `start` toward `end`.
+/// `bend` (±1) picks which side the joint bows out to.
+func twoBoneJoint(from start: CGPoint, to end: CGPoint, upper: CGFloat, lower: CGFloat, bend: CGFloat) -> CGPoint {
+    let delta = end - start
+    let fullLength = max(delta.length, 0.001)
+    let distance = min(fullLength, upper + lower - 0.001)
+    let direction = delta * (1 / fullLength)
+    let along = (upper * upper - lower * lower + distance * distance) / (2 * distance)
+    let height = sqrt(max(upper * upper - along * along, 0))
+    let perpendicular = CGPoint(x: -direction.y, y: direction.x)
+    return start + direction * along + perpendicular * (height * bend)
+}

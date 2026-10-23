@@ -14,6 +14,7 @@ enum WallpaperCatalog {
         SpaceCollection.collection,
         NatureCollection.collection,
         LofiCollection.collection,
+        HalloweenCollection.collection,
     ]
 
     static let defaultWallpaperID = "claude.spark-bloom"

@@ -175,7 +175,7 @@ enum SkaterFigure {
     }
 
     private static func drawLeg(in g: GraphicsContext, hip: CGPoint, foot: CGPoint, bend: CGFloat, palette: SkaterPalette, outline: CGFloat) {
-        let knee = joint(from: hip, to: foot, upper: 2.55, lower: 2.55, bend: bend)
+        let knee = twoBoneJoint(from: hip, to: foot, upper: 2.55, lower: 2.55, bend: bend)
         var leg = Path()
         leg.addLines([hip, knee, foot])
         g.stroke(leg, with: .color(palette.ink), style: SkateTheme.outline(1.15 + outline * 2))
@@ -188,7 +188,7 @@ enum SkaterFigure {
     }
 
     private static func drawArm(in g: GraphicsContext, shoulder: CGPoint, hand: CGPoint, bend: CGFloat, palette: SkaterPalette, outline: CGFloat) {
-        let elbow = joint(from: shoulder, to: hand, upper: 1.75, lower: 1.65, bend: bend)
+        let elbow = twoBoneJoint(from: shoulder, to: hand, upper: 1.75, lower: 1.65, bend: bend)
         var forearm = Path()
         forearm.addLines([elbow, hand])
         g.stroke(forearm, with: .color(palette.ink), style: SkateTheme.outline(0.62 + outline * 2))
@@ -197,17 +197,5 @@ enum SkaterFigure {
         sleeve.addLines([shoulder, elbow])
         g.stroke(sleeve, with: .color(palette.ink), style: SkateTheme.outline(0.85 + outline * 2))
         g.stroke(sleeve, with: .color(palette.shirt), style: SkateTheme.outline(0.85))
-    }
-
-    /// Two-bone IK: where the knee/elbow sits so both segments reach from `start` toward `end`.
-    private static func joint(from start: CGPoint, to end: CGPoint, upper: CGFloat, lower: CGFloat, bend: CGFloat) -> CGPoint {
-        let delta = end - start
-        let fullLength = max(delta.length, 0.001)
-        let distance = min(fullLength, upper + lower - 0.001)
-        let direction = delta * (1 / fullLength)
-        let along = (upper * upper - lower * lower + distance * distance) / (2 * distance)
-        let height = sqrt(max(upper * upper - along * along, 0))
-        let perpendicular = CGPoint(x: -direction.y, y: direction.x)
-        return start + direction * along + perpendicular * (height * bend)
     }
 }
