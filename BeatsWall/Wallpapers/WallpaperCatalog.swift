@@ -13,6 +13,7 @@ enum WallpaperCatalog {
         SynthwaveCollection.collection,
         SpaceCollection.collection,
         NatureCollection.collection,
+        LofiCollection.collection,
     ]
 
     static let defaultWallpaperID = "claude.spark-bloom"
