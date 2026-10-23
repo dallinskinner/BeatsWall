@@ -9,9 +9,36 @@ import SwiftUI
 
 @main
 struct BeatsWallApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        Window("BeatsWall", id: "collections") {
+            CollectionsView()
+                .environment(appDelegate.appState)
         }
+        .defaultSize(width: 1080, height: 720)
+
+        MenuBarExtra("BeatsWall", systemImage: "waveform") {
+            MenuBarContent()
+                .environment(appDelegate.appState)
+        }
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let appState = AppState()
+    private var desktop: DesktopWallpaperController?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        desktop = DesktopWallpaperController(appState: appState)
+        appState.start()
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        appState.shutdown()
     }
 }
