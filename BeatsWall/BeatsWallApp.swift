@@ -18,9 +18,12 @@ struct BeatsWallApp: App {
         }
         .defaultSize(width: 1080, height: 720)
 
-        MenuBarExtra("BeatsWall", systemImage: "waveform") {
+        MenuBarExtra {
             MenuBarContent()
                 .environment(appDelegate.appState)
+        } label: {
+            Image(nsImage: BeatsWallLogo.menuBarImage)
+                .accessibilityLabel("BeatsWall")
         }
     }
 }

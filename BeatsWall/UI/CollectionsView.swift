@@ -27,6 +27,18 @@ struct CollectionsView: View {
                 }
                 .padding(.vertical, 4)
             }
+            .safeAreaInset(edge: .top) {
+                HStack(spacing: 10) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 36, height: 36)
+                    Text("BeatsWall")
+                        .font(.title3.weight(.semibold))
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+            }
             .navigationTitle("Collections")
             .navigationSplitViewColumnWidth(min: 180, ideal: 210)
         } detail: {
