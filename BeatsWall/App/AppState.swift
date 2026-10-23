@@ -15,20 +15,65 @@ final class AppState {
         case failed(String)
     }
 
+    enum ShufflePool: String, CaseIterable, Identifiable {
+        case collection
+        case everything
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .collection: "This Collection"
+            case .everything: "All Wallpapers"
+            }
+        }
+    }
+
     private static let wallpaperKey = "selectedWallpaperID"
+    private static let shuffleKey = "isShuffling"
+    private static let shufflePoolKey = "shufflePool"
+    private static let lyricsKey = "showsLyrics"
 
     var selectedWallpaperID: String {
-        didSet { UserDefaults.standard.set(selectedWallpaperID, forKey: Self.wallpaperKey) }
+        didSet {
+            UserDefaults.standard.set(selectedWallpaperID, forKey: Self.wallpaperKey)
+            // Picking a wallpaper shows it right away; shuffle carries on from the next bar.
+            shuffledWallpaperID = nil
+        }
     }
+
+    /// Switch to a random wallpaper on the downbeat of every bar.
+    var isShuffling: Bool {
+        didSet {
+            UserDefaults.standard.set(isShuffling, forKey: Self.shuffleKey)
+            if !isShuffling { shuffledWallpaperID = nil }
+            updateShuffle()
+        }
+    }
+
+    var shufflePool: ShufflePool {
+        didSet { UserDefaults.standard.set(shufflePool.rawValue, forKey: Self.shufflePoolKey) }
+    }
+
+    /// The wallpaper shuffle is currently showing, if it has moved away from the selection.
+    private(set) var shuffledWallpaperID: String?
+
+    var showsLyrics: Bool {
+        didSet {
+            UserDefaults.standard.set(showsLyrics, forKey: Self.lyricsKey)
+            updateLyrics()
+        }
+    }
+
+    let lyrics = LyricsController()
 
     /// Paused from the menu bar or browser.
     var isPaused = false {
-        didSet { updateAudio() }
+        didSet { updateRunning() }
     }
 
     /// Displays asleep or the user switched sessions.
     var isSystemAsleep = false {
-        didSet { updateAudio() }
+        didSet { updateRunning() }
     }
 
     private(set) var audioStatus: AudioStatus = .stopped
@@ -37,18 +82,29 @@ final class AppState {
 
     @ObservationIgnored private var tap: SystemAudioTap?
     @ObservationIgnored private var isStarted = false
+    @ObservationIgnored private var shuffleTimer: Timer?
+    @ObservationIgnored private var shuffleBeat = BeatEdge()
 
     init() {
-        let saved = UserDefaults.standard.string(forKey: Self.wallpaperKey)
+        let defaults = UserDefaults.standard
+        let saved = defaults.string(forKey: Self.wallpaperKey)
         if let saved, WallpaperCatalog.wallpaper(id: saved) != nil {
             selectedWallpaperID = saved
         } else {
             selectedWallpaperID = WallpaperCatalog.defaultWallpaperID
         }
+        isShuffling = defaults.bool(forKey: Self.shuffleKey)
+        shufflePool = defaults.string(forKey: Self.shufflePoolKey).flatMap(ShufflePool.init(rawValue:)) ?? .collection
+        showsLyrics = defaults.bool(forKey: Self.lyricsKey)
     }
 
     var selectedWallpaper: Wallpaper {
         WallpaperCatalog.wallpaper(id: selectedWallpaperID) ?? WallpaperCatalog.wallpaper(id: WallpaperCatalog.defaultWallpaperID)!
+    }
+
+    /// What's on the desktop right now: the shuffle pick, or the selection.
+    var displayedWallpaper: Wallpaper {
+        shuffledWallpaperID.flatMap { WallpaperCatalog.wallpaper(id: $0) } ?? selectedWallpaper
     }
 
     var isRendering: Bool { !isPaused && !isSystemAsleep }
@@ -63,11 +119,56 @@ final class AppState {
         guard !isStarted else { return }
         isStarted = true
         observeOutputDeviceChanges()
-        updateAudio()
+        updateRunning()
     }
 
     func shutdown() {
         stopAudio()
+        lyrics.setActive(false)
+        shuffleTimer?.invalidate()
+    }
+
+    private func updateRunning() {
+        updateAudio()
+        updateShuffle()
+        updateLyrics()
+    }
+
+    private func updateLyrics() {
+        guard isStarted else { return }
+        lyrics.setActive(showsLyrics && isRendering)
+    }
+
+    // MARK: - Shuffle
+
+    /// Watches for beats ~30 times a second while shuffling and switches on each bar's downbeat.
+    private func updateShuffle() {
+        let shouldRun = isStarted && isShuffling && isRendering
+        if shouldRun, shuffleTimer == nil {
+            shuffleBeat = BeatEdge()
+            shuffleTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkShuffleBeat() }
+            }
+        } else if !shouldRun {
+            shuffleTimer?.invalidate()
+            shuffleTimer = nil
+        }
+    }
+
+    private func checkShuffleBeat() {
+        let audio = desktopSource.read()
+        guard shuffleBeat.isNewBeat(audio), audio.beatCount % 4 == 0 else { return }
+        let pool: [Wallpaper]
+        switch shufflePool {
+        case .everything:
+            pool = WallpaperCatalog.collections.flatMap(\.wallpapers)
+        case .collection:
+            pool = WallpaperCatalog.collections.first { $0.wallpapers.contains { $0.id == selectedWallpaperID } }?.wallpapers ?? []
+        }
+        let current = displayedWallpaper.id
+        if let next = pool.filter({ $0.id != current }).randomElement() {
+            shuffledWallpaperID = next.id
+        }
     }
 
     private func updateAudio() {

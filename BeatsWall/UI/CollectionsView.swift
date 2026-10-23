@@ -49,7 +49,15 @@ struct CollectionsView: View {
             }
         }
         .toolbar {
-            ToolbarItem {
+            ToolbarItemGroup {
+                Toggle(isOn: $appState.isShuffling) {
+                    Label("Shuffle", systemImage: "shuffle")
+                }
+                .help("Switch to a random wallpaper every bar")
+                Toggle(isOn: $appState.showsLyrics) {
+                    Label("Lyrics", systemImage: "quote.bubble")
+                }
+                .help("Show synced lyrics for the song playing in Music or Spotify")
                 Toggle(isOn: $appState.isPaused) {
                     Label("Pause", systemImage: appState.isPaused ? "play.fill" : "pause.fill")
                 }
@@ -75,6 +83,7 @@ private struct CollectionDetailView: View {
                 }
 
                 AudioStatusView()
+                LyricsStatusView()
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 20)], spacing: 28) {
                     ForEach(collection.wallpapers) { wallpaper in
@@ -189,5 +198,54 @@ private struct AudioStatusView: View {
         }
         .padding(14)
         .background(.orange.opacity(0.08), in: .rect(cornerRadius: 10))
+    }
+}
+
+private struct LyricsStatusView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.openURL) private var openURL
+
+    private static let automationSettings = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
+
+    var body: some View {
+        if appState.showsLyrics {
+            let lyrics = appState.lyrics
+            switch lyrics.status {
+            case .needsPermission(let player):
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "quote.bubble.fill")
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Allow BeatsWall to read \(player)").font(.headline)
+                        Text("Lyrics need to know which song is playing. Turn on BeatsWall › \(player) under Privacy & Security › Automation.")
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Open Automation Settings") { openURL(Self.automationSettings) }
+                            .padding(.top, 4)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+                .background(.orange.opacity(0.08), in: .rect(cornerRadius: 10))
+            default:
+                Label(message(for: lyrics), systemImage: "quote.bubble")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func message(for lyrics: LyricsController) -> String {
+        let song = lyrics.track.map { "\($0.title) — \($0.artist)" } ?? ""
+        switch lyrics.status {
+        case .idle: return "Lyrics paused"
+        case .nothingPlaying: return "Lyrics: play a song in Apple Music or Spotify"
+        case .searching: return "Finding lyrics for \(song)…"
+        case .showing: return "Lyrics: \(song)"
+        case .instrumental: return "\(song) is instrumental"
+        case .notFound: return "No synced lyrics found for \(song)"
+        case .failed: return "Couldn't reach the lyrics service"
+        case .needsPermission: return ""
+        }
     }
 }

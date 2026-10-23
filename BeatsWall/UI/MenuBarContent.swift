@@ -25,6 +25,21 @@ struct MenuBarContent: View {
 
         Divider()
 
+        Toggle("Shuffle Every Bar", isOn: $appState.isShuffling)
+            .keyboardShortcut("s")
+        Picker("Shuffle From", selection: $appState.shufflePool) {
+            ForEach(AppState.ShufflePool.allCases) { pool in
+                Text(pool.title).tag(pool)
+            }
+        }
+        Toggle("Show Lyrics", isOn: $appState.showsLyrics)
+            .keyboardShortcut("l")
+        if appState.showsLyrics, let track = appState.lyrics.track {
+            Text("♪ \(track.title) — \(track.artist)")
+        }
+
+        Divider()
+
         Toggle("Pause", isOn: $appState.isPaused)
             .keyboardShortcut("p")
 

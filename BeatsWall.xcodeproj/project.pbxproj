@@ -246,11 +246,14 @@
 				DEVELOPMENT_TEAM = 3R72T79JHR;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				CODE_SIGN_ENTITLEMENTS = BeatsWall.entitlements;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "BeatsWall listens to your Mac's audio so wallpapers can react to music.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "BeatsWall reads the song playing in Music or Spotify so it can show synced lyrics on your wallpaper.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -279,11 +282,14 @@
 				DEVELOPMENT_TEAM = 3R72T79JHR;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				CODE_SIGN_ENTITLEMENTS = BeatsWall.entitlements;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "BeatsWall listens to your Mac's audio so wallpapers can react to music.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "BeatsWall reads the song playing in Music or Spotify so it can show synced lyrics on your wallpaper.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

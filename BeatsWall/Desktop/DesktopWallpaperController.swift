@@ -64,9 +64,15 @@ private struct DesktopWallpaperView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        appState.selectedWallpaper
-            .makeView(WallpaperContext(source: appState.desktopSource, isPaused: !appState.isRendering, isPreview: false))
-            .id(appState.selectedWallpaperID)
-            .ignoresSafeArea()
+        let wallpaper = appState.displayedWallpaper
+        ZStack {
+            wallpaper
+                .makeView(WallpaperContext(source: appState.desktopSource, isPaused: !appState.isRendering, isPreview: false))
+                .id(wallpaper.id)
+            if appState.showsLyrics {
+                LyricsOverlay(lyrics: appState.lyrics, source: appState.desktopSource, isPaused: !appState.isRendering)
+            }
+        }
+        .ignoresSafeArea()
     }
 }
