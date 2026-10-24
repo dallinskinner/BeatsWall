@@ -15,6 +15,7 @@ nonisolated final class AudioFeaturesStore: AudioFeatureSource {
         var updatedAt = -Double.infinity
         var lastBeatAt = -Double.infinity
         var lastSignalAt = -Double.infinity
+        var gain: Float = 1
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -35,10 +36,25 @@ nonisolated final class AudioFeaturesStore: AudioFeatureSource {
         }
     }
 
+    /// Scales levels before wallpapers see them, so quiet setups can still drive big visuals.
+    var gain: Float {
+        get { state.withLock { $0.gain } }
+        set { state.withLock { $0.gain = newValue } }
+    }
+
     func read() -> AudioFeatures {
         let now = clock()
         let state = state.withLock { $0 }
         var features = state.features
+
+        if state.gain != 1 {
+            let gain = state.gain
+            features.level = min(1, features.level * gain)
+            features.bass = min(1, features.bass * gain)
+            features.mid = min(1, features.mid * gain)
+            features.treble = min(1, features.treble * gain)
+            features.spectrum = features.spectrum.map { min(1, $0 * gain) }
+        }
 
         // If buffers stop arriving (device change, capture stopped), fade out instead of freezing.
         let staleness = now - state.updatedAt - 0.25

@@ -18,6 +18,23 @@ struct BeatsWallApp: App {
         }
         .defaultSize(width: 1080, height: 720)
 
+        Window("Record Clip", id: "clip") {
+            ClipExportView()
+                .environment(appDelegate.appState)
+        }
+        .windowResizability(.contentSize)
+
+        Window("Send Feedback", id: "feedback") {
+            FeedbackView()
+                .environment(appDelegate.appState)
+        }
+        .windowResizability(.contentSize)
+
+        Settings {
+            SettingsView()
+                .environment(appDelegate.appState)
+        }
+
         MenuBarExtra {
             MenuBarContent()
                 .environment(appDelegate.appState)
@@ -36,6 +53,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEBUG
         if TrailerRenderer.runIfRequested() { return }
         #endif
+        if BetaInfo.hasExpired {
+            BetaInfo.showExpiredAndQuit()
+            return
+        }
         desktop = DesktopWallpaperController(appState: appState)
         appState.start()
     }

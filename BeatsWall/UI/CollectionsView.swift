@@ -7,6 +7,8 @@ import SwiftUI
 
 struct CollectionsView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
+    @AppStorage(OnboardingView.completedKey) private var hasCompletedOnboarding = false
     @State private var selectedCollectionID: String? = WallpaperCatalog.collections.first?.id
 
     var body: some View {
@@ -32,8 +34,21 @@ struct CollectionsView: View {
                     Image(nsImage: NSApp.applicationIconImage)
                         .resizable()
                         .frame(width: 36, height: 36)
-                    Text("BeatsWall")
-                        .font(.title3.weight(.semibold))
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("BeatsWall")
+                                .font(.title3.weight(.semibold))
+                            Text("BETA")
+                                .font(.caption2.weight(.heavy))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .foregroundStyle(.white)
+                                .background(.tint, in: Capsule())
+                        }
+                        Text("\(BetaInfo.version) (\(BetaInfo.build))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                 }
                 .padding(.horizontal, 14)
@@ -50,6 +65,12 @@ struct CollectionsView: View {
         }
         .toolbar {
             ToolbarItemGroup {
+                Button {
+                    openWindow(id: "clip")
+                } label: {
+                    Label("Record Clip", systemImage: "record.circle")
+                }
+                .help("Make a video of a wallpaper dancing to a song")
                 Toggle(isOn: $appState.isShuffling) {
                     Label("Shuffle", systemImage: "shuffle")
                 }
@@ -63,6 +84,10 @@ struct CollectionsView: View {
                 }
                 .help(appState.isPaused ? "Resume wallpaper" : "Pause wallpaper")
             }
+        }
+        .sheet(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { if !$0 { hasCompletedOnboarding = true } })) {
+            OnboardingView()
+                .interactiveDismissDisabled()
         }
     }
 }
@@ -162,7 +187,7 @@ private struct AudioStatusView: View {
                     showsSettings: true
                 )
             case .stopped:
-                Label("Paused", systemImage: "pause.circle")
+                Label(appState.pauseReason ?? "Paused", systemImage: "pause.circle")
                     .foregroundStyle(.secondary)
             case .listening where appState.liveAudio.secondsSinceSignal > 4:
                 banner(

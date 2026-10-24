@@ -14,6 +14,8 @@ struct WallpaperContext {
     /// When set, draw exactly this moment instead of following the display clock
     /// (used to render video offline).
     var renderTime: Double? = nil
+    /// Frame rate cap for the desktop; previews always run at 30.
+    var frameRate: Double = 60
 }
 
 struct Wallpaper: Identifiable {
@@ -65,7 +67,7 @@ struct AudioTimeline<Content: View>: View {
         if let renderTime = context.renderTime {
             content(AudioFrame(time: renderTime, audio: context.source.read()))
         } else {
-            TimelineView(.animation(minimumInterval: context.isPreview ? 1 / 30 : 1 / 60, paused: context.isPaused)) { timeline in
+            TimelineView(.animation(minimumInterval: 1 / (context.isPreview ? 30 : context.frameRate), paused: context.isPaused)) { timeline in
                 content(AudioFrame(
                     time: timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 86_400),
                     audio: context.source.read()

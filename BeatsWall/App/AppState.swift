@@ -32,6 +32,12 @@ final class AppState {
     private static let shuffleKey = "isShuffling"
     private static let shufflePoolKey = "shufflePool"
     private static let lyricsKey = "showsLyrics"
+    private static let reactivityKey = "reactivity"
+    private static let frameRateKey = "frameRate"
+    private static let pausesWhenCoveredKey = "pausesWhenCovered"
+    private static let pausesInLowPowerKey = "pausesInLowPower"
+    private static let hidesDesktopIconsKey = "hidesDesktopIcons"
+    private static let displayWallpapersKey = "displayWallpaperIDs"
 
     var selectedWallpaperID: String {
         didSet {
@@ -66,6 +72,44 @@ final class AppState {
 
     let lyrics = LyricsController()
 
+    /// How strongly wallpapers react: 1 is as analyzed, up to 2x for quiet setups.
+    var reactivity: Double {
+        didSet {
+            UserDefaults.standard.set(reactivity, forKey: Self.reactivityKey)
+            liveAudio.gain = Float(reactivity)
+        }
+    }
+
+    /// Desktop frame rate cap.
+    var frameRate: Double {
+        didSet { UserDefaults.standard.set(frameRate, forKey: Self.frameRateKey) }
+    }
+
+    var pausesWhenCovered: Bool {
+        didSet {
+            UserDefaults.standard.set(pausesWhenCovered, forKey: Self.pausesWhenCoveredKey)
+            updateRunning()
+        }
+    }
+
+    var pausesInLowPower: Bool {
+        didSet {
+            UserDefaults.standard.set(pausesInLowPower, forKey: Self.pausesInLowPowerKey)
+            updateRunning()
+        }
+    }
+
+    /// Lift the wallpaper above the desktop icons, for clean screen recordings.
+    var hidesDesktopIcons: Bool {
+        didSet { UserDefaults.standard.set(hidesDesktopIcons, forKey: Self.hidesDesktopIconsKey) }
+    }
+
+    /// Wallpapers pinned to particular displays, by display UUID. Displays without one
+    /// show the main selection (and follow shuffle).
+    var displayWallpaperIDs: [String: String] {
+        didSet { UserDefaults.standard.set(displayWallpaperIDs, forKey: Self.displayWallpapersKey) }
+    }
+
     /// Paused from the menu bar or browser.
     var isPaused = false {
         didSet { updateRunning() }
@@ -73,6 +117,15 @@ final class AppState {
 
     /// Displays asleep or the user switched sessions.
     var isSystemAsleep = false {
+        didSet { updateRunning() }
+    }
+
+    /// Every wallpaper window is hidden behind other windows or in a full-screen space.
+    var isDesktopCovered = false {
+        didSet { updateRunning() }
+    }
+
+    private(set) var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled {
         didSet { updateRunning() }
     }
 
@@ -96,6 +149,19 @@ final class AppState {
         isShuffling = defaults.bool(forKey: Self.shuffleKey)
         shufflePool = defaults.string(forKey: Self.shufflePoolKey).flatMap(ShufflePool.init(rawValue:)) ?? .collection
         showsLyrics = defaults.bool(forKey: Self.lyricsKey)
+        defaults.register(defaults: [
+            Self.reactivityKey: 1.0,
+            Self.frameRateKey: 60.0,
+            Self.pausesWhenCoveredKey: true,
+            Self.pausesInLowPowerKey: true,
+        ])
+        reactivity = defaults.double(forKey: Self.reactivityKey)
+        frameRate = defaults.double(forKey: Self.frameRateKey)
+        pausesWhenCovered = defaults.bool(forKey: Self.pausesWhenCoveredKey)
+        pausesInLowPower = defaults.bool(forKey: Self.pausesInLowPowerKey)
+        hidesDesktopIcons = defaults.bool(forKey: Self.hidesDesktopIconsKey)
+        displayWallpaperIDs = defaults.dictionary(forKey: Self.displayWallpapersKey) as? [String: String] ?? [:]
+        liveAudio.gain = Float(reactivity)
     }
 
     var selectedWallpaper: Wallpaper {
@@ -107,7 +173,25 @@ final class AppState {
         shuffledWallpaperID.flatMap { WallpaperCatalog.wallpaper(id: $0) } ?? selectedWallpaper
     }
 
-    var isRendering: Bool { !isPaused && !isSystemAsleep }
+    /// The wallpaper for one display: its pinned wallpaper, or whatever's on the main desktop.
+    func wallpaper(forDisplay displayID: String?) -> Wallpaper {
+        displayID.flatMap { displayWallpaperIDs[$0] }.flatMap { WallpaperCatalog.wallpaper(id: $0) } ?? displayedWallpaper
+    }
+
+    var isRendering: Bool {
+        !isPaused && !isSystemAsleep
+            && !(pausesWhenCovered && isDesktopCovered)
+            && !(pausesInLowPower && isLowPower)
+    }
+
+    /// Why the wallpaper is still, if it is.
+    var pauseReason: String? {
+        if isPaused { return "Paused" }
+        if isSystemAsleep { return "Paused while the display sleeps" }
+        if pausesWhenCovered && isDesktopCovered { return "Paused while the desktop is covered" }
+        if pausesInLowPower && isLowPower { return "Paused in Low Power Mode" }
+        return nil
+    }
 
     /// Live audio when we can capture it, otherwise a demo beat so the desktop still moves.
     var desktopSource: any AudioFeatureSource {
@@ -119,6 +203,9 @@ final class AppState {
         guard !isStarted else { return }
         isStarted = true
         observeOutputDeviceChanges()
+        NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled }
+        }
         updateRunning()
     }
 

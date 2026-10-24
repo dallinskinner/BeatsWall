@@ -42,18 +42,33 @@ struct MenuBarContent: View {
 
         Toggle("Pause", isOn: $appState.isPaused)
             .keyboardShortcut("p")
-
-        Button("Browse Collections…") {
-            openWindow(id: "collections")
-            NSApp.activate()
-        }
-        .keyboardShortcut(",")
+        Toggle("Hide Desktop Icons", isOn: $appState.hidesDesktopIcons)
+            .keyboardShortcut("h", modifiers: [.command, .shift])
 
         Divider()
+
+        Button("Record Clip…") { open("clip") }
+            .keyboardShortcut("r")
+        Button("Browse Collections…") { open("collections") }
+            .keyboardShortcut("b")
+        SettingsLink {
+            Text("Settings…")
+        }
+        .keyboardShortcut(",")
+        Button("Send Feedback…") { open("feedback") }
+
+        Divider()
+
+        Text("BeatsWall \(BetaInfo.versionDescription)")
 
         Button("Quit BeatsWall") {
             NSApp.terminate(nil)
         }
         .keyboardShortcut("q")
+    }
+
+    private func open(_ window: String) {
+        openWindow(id: window)
+        NSApp.activate()
     }
 }
