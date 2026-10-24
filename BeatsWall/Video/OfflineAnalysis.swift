@@ -2,15 +2,14 @@
 //  OfflineAnalysis.swift
 //  BeatsWall
 //
-//  Debug-only: analyzes a whole song ahead of time so the trailer can be rendered offline.
+//  Analyzes a whole song ahead of time so video can be rendered offline.
 //
 
-#if DEBUG
 import AVFoundation
 import Foundation
 
 /// Audio features for every video frame of a song, plus its detected beats.
-struct SongAnalysis {
+nonisolated struct SongAnalysis: Sendable {
     let fps: Double
     let duration: Double
     /// One entry per video frame across the whole song.
@@ -35,7 +34,7 @@ struct SongAnalysis {
     }
 }
 
-enum OfflineAnalysis {
+nonisolated enum OfflineAnalysis {
     /// A clock the analyzer reads, advanced by hand as samples are fed in.
     nonisolated private final class VirtualClock: @unchecked Sendable {
         var time = 0.0
@@ -101,4 +100,3 @@ nonisolated final class OfflineAudioSource: AudioFeatureSource, @unchecked Senda
         frames[min(max(frameIndex, 0), frames.count - 1)]
     }
 }
-#endif

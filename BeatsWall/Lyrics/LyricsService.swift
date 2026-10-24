@@ -48,6 +48,18 @@ nonisolated enum LyricsService {
         return .notFound
     }
 
+    /// A free-text search (like a file name), trusted only when a result's length matches,
+    /// since there's no artist to confirm it's the right song.
+    static func lyrics(searching query: String, duration: Double) async throws -> LyricsResult {
+        var search = URLComponents(url: base.appendingPathComponent("search"), resolvingAgainstBaseURL: false)!
+        search.queryItems = [URLQueryItem(name: "q", value: query)]
+        let records = try await fetch(search.url!, as: [Record].self) ?? []
+        let best = records
+            .filter { $0.syncedLyrics?.isEmpty == false && abs(($0.duration ?? 0) - duration) < 3 }
+            .min { abs(($0.duration ?? 0) - duration) < abs(($1.duration ?? 0) - duration) }
+        return best?.result ?? .notFound
+    }
+
     private struct Record: Decodable {
         var duration: Double?
         var instrumental: Bool?

@@ -131,14 +131,13 @@ final class LyricsController {
     }
 }
 
-#if DEBUG
 extension LyricsController {
-    /// Loads sample lyrics without a player, for previews and visual checks.
-    func loadPreview(track: NowPlaying, lines: [LyricLine], epoch: Date = Date()) {
+    /// Shows fixed lyrics without a player, for exported clips and previews.
+    /// Song time zero lines up with `epoch`.
+    func loadFixed(track: NowPlaying, lines: [LyricLine], epoch: Date = Date()) {
         self.track = track
         self.lines = lines
         readAt = epoch
         status = lines.isEmpty ? .notFound : .showing
     }
 }
-#endif

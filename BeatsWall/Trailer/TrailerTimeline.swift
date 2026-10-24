@@ -44,14 +44,10 @@ struct TrailerTimeline {
 
     /// Builds the cut list from the beats inside the trailer window (times relative to its start).
     init(beats: [Double]) {
-        // Detection occasionally misses a beat, so cut on a steady grid at the song's median
-        // tempo, anchored on the first beat (120 BPM if detection came up short).
-        let intervals = zip(beats.dropFirst(), beats).map { $0 - $1 }.filter { $0 > 0.25 && $0 < 1.0 }.sorted()
-        let beatLength = intervals.count > 8 ? intervals[intervals.count / 2] : 0.5
-        let anchor = beats.first { $0 >= -0.01 } ?? 0
-        let grid = stride(from: anchor, to: Self.length + 4, by: beatLength).map { $0 }
-        let bars = stride(from: 0, to: grid.count, by: 4).map { grid[$0] }
-        func bar(atOrAfter time: Double) -> Int { bars.firstIndex { $0 >= time - 0.05 } ?? bars.count - 1 }
+        let beatGrid = BeatGrid(detectedBeats: beats, length: Self.length)
+        let grid = beatGrid.beats
+        let bars = beatGrid.bars
+        func bar(atOrAfter time: Double) -> Int { beatGrid.bar(atOrAfter: time) }
 
         var shots: [TrailerShot] = []
         let introEnd = bars[bar(atOrAfter: 3.8)]
