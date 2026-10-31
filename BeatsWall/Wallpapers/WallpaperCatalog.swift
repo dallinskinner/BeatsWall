@@ -9,6 +9,7 @@ import Foundation
 enum WallpaperCatalog {
     static let collections: [WallpaperCollection] = [
         ClaudeCollection.collection,
+        ConcertCollection.collection,
         SkateboardingCollection.collection,
         SynthwaveCollection.collection,
         SpaceCollection.collection,
