@@ -2,8 +2,8 @@
 //  BetaInfo.swift
 //  BeatsWall
 //
-//  Version and private-beta details. The expiry date and feedback address are filled in by
-//  Tools/make-dmg.sh; local builds leave them empty (no expiry).
+//  Version and private-beta details. The expiry date, feedback address and update address are
+//  filled in by Tools/make-dmg.sh; local builds leave them empty (no expiry, no update checks).
 //
 
 import AppKit
@@ -36,6 +36,12 @@ enum BetaInfo {
     static var feedbackEmail: String? {
         guard let email = Bundle.main.object(forInfoDictionaryKey: "BWFeedbackEmail") as? String, email.contains("@") else { return nil }
         return email
+    }
+
+    /// Where the latest beta build is announced (`latest.json`), if this build checks.
+    static var updateURL: URL? {
+        guard let text = Bundle.main.object(forInfoDictionaryKey: "BWUpdateURL") as? String, text.hasPrefix("https://") else { return nil }
+        return URL(string: text)
     }
 
     /// Tells a tester this build has ended, then quits.

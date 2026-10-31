@@ -12,6 +12,11 @@ struct MenuBarContent: View {
     var body: some View {
         @Bindable var appState = appState
 
+        if let release = appState.updates.available {
+            Button("⬆︎ New beta build \(release.build) — Download…") { NSWorkspace.shared.open(release.download) }
+            Divider()
+        }
+
         ForEach(WallpaperCatalog.collections) { collection in
             Section(collection.name) {
                 ForEach(collection.wallpapers) { wallpaper in

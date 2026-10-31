@@ -86,6 +86,7 @@ final class AppState {
     }
 
     let concert = ConcertShow()
+    let updates = UpdateChecker()
 
     /// The Concert stage to always use, or nil to pick one that suits each song.
     var concertStageID: String? {
@@ -249,6 +250,7 @@ final class AppState {
     func start() {
         guard !isStarted else { return }
         isStarted = true
+        updates.start()
         observeOutputDeviceChanges()
         NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled }

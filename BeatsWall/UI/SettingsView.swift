@@ -150,6 +150,14 @@ struct SettingsView: View {
 
             Section {
                 LabeledContent("Version", value: BetaInfo.versionDescription)
+                if let release = appState.updates.available {
+                    LabeledContent {
+                        Button("Download…") { NSWorkspace.shared.open(release.download) }
+                    } label: {
+                        Label("Build \(release.build) is ready", systemImage: "arrow.down.circle.fill")
+                            .foregroundStyle(.tint)
+                    }
+                }
                 if let expiresAt = BetaInfo.expiresAt {
                     LabeledContent("Beta ends", value: expiresAt.addingTimeInterval(-1).formatted(date: .long, time: .omitted))
                 }
