@@ -58,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         desktop = DesktopWallpaperController(appState: appState)
+        ShowModeController.shared = ShowModeController(appState: appState)
         appState.start()
     }
 

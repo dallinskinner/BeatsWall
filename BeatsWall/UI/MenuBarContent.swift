@@ -68,6 +68,15 @@ struct MenuBarContent: View {
 
         Divider()
 
+        Button(appState.isShowing ? "Leave Show Mode" : "Show Mode") { ShowModeController.shared?.toggle() }
+            .keyboardShortcut("f")
+        if NSScreen.screens.count > 1, !appState.isShowing {
+            Menu("Show Mode On") {
+                ForEach(Array(NSScreen.screens.enumerated()), id: \.offset) { _, screen in
+                    Button(screen.localizedName) { ShowModeController.shared?.open(on: screen) }
+                }
+            }
+        }
         Button("Record Clip…") { open("clip") }
             .keyboardShortcut("r")
         Button("Browse Collections…") { open("collections") }

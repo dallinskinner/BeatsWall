@@ -153,6 +153,20 @@ final class AppState {
         didSet { updateRunning() }
     }
 
+    /// Show Mode's full-screen window is open.
+    var isShowing = false {
+        didSet { updateRunning() }
+    }
+
+    /// Whether Show Mode animates: like the desktop, but not paused for covering the desktop,
+    /// since that's what it does.
+    var isShowRendering: Bool {
+        isShowing && !isPaused && !isSystemAsleep && !(pausesInLowPower && isLowPower)
+    }
+
+    /// Something on screen is animating, so audio capture, lyrics, Concert Mode and shuffle run.
+    private var isLive: Bool { isRendering || isShowRendering }
+
     private(set) var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled {
         didSet { updateRunning() }
     }
@@ -258,21 +272,21 @@ final class AppState {
 
     private func updateConcert() {
         guard isStarted else { return }
-        concert.setActive(isConcertMode && isRendering, lyrics: lyrics) { [weak self] in
+        concert.setActive(isConcertMode && isLive, lyrics: lyrics) { [weak self] in
             self?.desktopSource.read() ?? AudioFeatures()
         }
     }
 
     private func updateLyrics() {
         guard isStarted else { return }
-        lyrics.setActive(showsLyrics && isRendering)
+        lyrics.setActive(showsLyrics && isLive)
     }
 
     // MARK: - Shuffle
 
     /// Watches for beats ~30 times a second while shuffling and switches on each bar's downbeat.
     private func updateShuffle() {
-        let shouldRun = isStarted && isShuffling && !isConcertMode && isRendering
+        let shouldRun = isStarted && isShuffling && !isConcertMode && isLive
         if shouldRun, shuffleTimer == nil {
             shuffleBeat = BeatEdge()
             shuffleTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
@@ -302,7 +316,7 @@ final class AppState {
 
     private func updateAudio() {
         guard isStarted else { return }
-        if isRendering { startAudio() } else { stopAudio() }
+        if isLive { startAudio() } else { stopAudio() }
     }
 
     private func startAudio() {
