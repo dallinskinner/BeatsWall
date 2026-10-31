@@ -162,7 +162,7 @@ final class AppState {
 
     init() {
         let defaults = UserDefaults.standard
-        let saved = defaults.string(forKey: Self.wallpaperKey)
+        let saved = defaults.string(forKey: Self.wallpaperKey).map(WallpaperCatalog.currentID)
         if let saved, WallpaperCatalog.wallpaper(id: saved) != nil {
             selectedWallpaperID = saved
         } else {
@@ -184,7 +184,7 @@ final class AppState {
         pausesWhenCovered = defaults.bool(forKey: Self.pausesWhenCoveredKey)
         pausesInLowPower = defaults.bool(forKey: Self.pausesInLowPowerKey)
         hidesDesktopIcons = defaults.bool(forKey: Self.hidesDesktopIconsKey)
-        displayWallpaperIDs = defaults.dictionary(forKey: Self.displayWallpapersKey) as? [String: String] ?? [:]
+        displayWallpaperIDs = (defaults.dictionary(forKey: Self.displayWallpapersKey) as? [String: String] ?? [:]).mapValues(WallpaperCatalog.currentID)
         liveAudio.gain = Float(reactivity)
         concert.chosenStageID = concertStageID
     }

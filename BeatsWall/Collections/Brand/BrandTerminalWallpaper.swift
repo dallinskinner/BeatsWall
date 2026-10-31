@@ -1,14 +1,14 @@
 //
-//  ClaudeTerminalWallpaper.swift
+//  BrandTerminalWallpaper.swift
 //  BeatsWall
 //
 
 import SwiftUI
 
-struct ClaudeTerminalWallpaper: View {
+struct BrandTerminalWallpaper: View {
     let context: WallpaperContext
 
-    private static let spinner = ["·", "✢", "✳", "✶", "✻", "✽", "✻", "✶", "✳", "✢"]
+    private static let spinner = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▂"]
     private static let verbs = ["Vibing", "Grooving", "Syncopating", "Riffing", "Harmonizing", "Pondering", "Jamming", "Noodling", "Swaying", "Composing"]
     private static let blocks: [Character] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
     private static let spectrumRows = 10
@@ -21,11 +21,11 @@ struct ClaudeTerminalWallpaper: View {
             AudioTimeline(context: context) { frame in
                 ZStack {
                     RadialGradient(
-                        colors: [ClaudeTheme.warmDark, ClaudeTheme.ink],
+                        colors: [BrandTheme.plum, BrandTheme.navy, BrandTheme.ink],
                         center: .center, startRadius: 0, endRadius: max(size.width, size.height) * 0.7
                     )
                     terminal(frame: frame, fontSize: fontSize)
-                        .shadow(color: ClaudeTheme.terracotta.opacity(0.25 + 0.3 * Double(frame.audio.beatPulse)), radius: fontSize * 0.8)
+                        .shadow(color: BrandTheme.magenta.opacity(0.25 + 0.3 * Double(frame.audio.beatPulse)), radius: fontSize * 0.8)
                 }
                 .frame(width: size.width, height: size.height)
                 .colorEffect(ShaderLibrary.scanlines(.float(frame.time), .float(0.16), .float(max(2, fontSize / 6))))
@@ -35,7 +35,7 @@ struct ClaudeTerminalWallpaper: View {
 
     private func terminal(frame: AudioFrame, fontSize: CGFloat) -> some View {
         let audio = frame.audio
-        let dim = ClaudeTheme.cream.opacity(0.45)
+        let dim = BrandTheme.glow.opacity(0.45)
         // The spinner advances a frame per beat, plus a slow idle tick so it never fully stops.
         let spinnerFrame = (audio.beatCount + Int(frame.time * 4)) % Self.spinner.count
         let verb = Self.verbs[(audio.beatCount / 8) % Self.verbs.count]
@@ -45,51 +45,51 @@ struct ClaudeTerminalWallpaper: View {
             // Window chrome.
             HStack(spacing: fontSize * 0.4) {
                 ForEach(0..<3, id: \.self) { _ in
-                    Circle().fill(ClaudeTheme.cream.opacity(0.18)).frame(width: fontSize * 0.7, height: fontSize * 0.7)
+                    Circle().fill(BrandTheme.glow.opacity(0.18)).frame(width: fontSize * 0.7, height: fontSize * 0.7)
                 }
                 Spacer()
-                Text("claude — beatswall — 80×24").foregroundStyle(dim)
+                Text("beatswall — ~/Music — 80×24").foregroundStyle(dim)
                 Spacer()
             }
 
             // Welcome box.
             VStack(alignment: .leading, spacing: fontSize * 0.25) {
-                Text("\(Text("✻ ").foregroundStyle(ClaudeTheme.terracotta))\(Text("Welcome to BeatsWall!").foregroundStyle(ClaudeTheme.cream).bold())")
-                Text("  /help for help, /vibe to keep vibing").foregroundStyle(dim)
-                Text("  cwd: ~/Music").foregroundStyle(dim)
+                Text("\(Text("▌▌ ").foregroundStyle(BrandTheme.magenta))\(Text("Welcome to BeatsWall!").foregroundStyle(BrandTheme.glow).bold())")
+                Text("   /help for help, /drop to wait for the drop").foregroundStyle(dim)
+                Text("   cwd: ~/Music").foregroundStyle(dim)
             }
             .padding(fontSize * 0.7)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(RoundedRectangle(cornerRadius: fontSize * 0.4).stroke(ClaudeTheme.terracotta, lineWidth: max(1, fontSize * 0.08)))
+            .overlay(RoundedRectangle(cornerRadius: fontSize * 0.4).stroke(LinearGradient(colors: [BrandTheme.magenta, BrandTheme.orange, BrandTheme.yellow], startPoint: .leading, endPoint: .trailing), lineWidth: max(1, fontSize * 0.08)))
 
-            Text("> play something loud").foregroundStyle(ClaudeTheme.cream)
+            Text("> play something loud").foregroundStyle(BrandTheme.glow)
 
             // Spectrum analyzer.
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(0..<Self.spectrumRows, id: \.self) { row in
                     Text(spectrumLine(row: row, spectrum: audio.spectrum))
-                        .foregroundStyle(ClaudeTheme.terracotta.mix(with: ClaudeTheme.cream, by: 0.55 * (1 - Double(row) / Double(Self.spectrumRows - 1))))
+                        .foregroundStyle(BrandTheme.gradient(1 - Double(row) / Double(Self.spectrumRows - 1)))
                 }
             }
             .padding(.vertical, fontSize * 0.3)
 
             Text("\(label("level"))\(level(audio.level))\(label("  bass"))\(level(audio.bass))\(label("  treble"))\(level(audio.treble))")
 
-            Text("\(Text("\(Self.spinner[spinnerFrame]) \(verb)…").foregroundStyle(ClaudeTheme.terracotta))\(label(audio.bpm > 0 ? " (\(Int(audio.bpm.rounded())) bpm · esc to interrupt)" : " (esc to interrupt)"))")
+            Text("\(Text("\(Self.spinner[spinnerFrame]) \(verb)…").foregroundStyle(BrandTheme.magenta))\(label(audio.bpm > 0 ? " (\(Int(audio.bpm.rounded())) bpm · esc to interrupt)" : " (esc to interrupt)"))")
 
             // Input box.
-            Text("\(label("> "))\(Text(cursorVisible ? "█" : " ").foregroundStyle(ClaudeTheme.cream))")
+            Text("\(label("> "))\(Text(cursorVisible ? "█" : " ").foregroundStyle(BrandTheme.glow))")
                 .padding(.horizontal, fontSize * 0.6)
                 .padding(.vertical, fontSize * 0.35)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(RoundedRectangle(cornerRadius: fontSize * 0.4).stroke(ClaudeTheme.cream.opacity(0.25), lineWidth: max(1, fontSize * 0.06)))
+                .overlay(RoundedRectangle(cornerRadius: fontSize * 0.4).stroke(BrandTheme.glow.opacity(0.25), lineWidth: max(1, fontSize * 0.06)))
         }
         .font(.system(size: fontSize, design: .monospaced))
         .lineLimit(1)
         .padding(fontSize * 1.2)
         .frame(width: fontSize * 46)
-        .background(ClaudeTheme.ink.opacity(0.85), in: .rect(cornerRadius: fontSize * 0.8))
-        .overlay(RoundedRectangle(cornerRadius: fontSize * 0.8).stroke(ClaudeTheme.cream.opacity(0.12), lineWidth: 1))
+        .background(BrandTheme.ink.opacity(0.85), in: .rect(cornerRadius: fontSize * 0.8))
+        .overlay(RoundedRectangle(cornerRadius: fontSize * 0.8).stroke(BrandTheme.glow.opacity(0.12), lineWidth: 1))
     }
 
     /// One row of the block-character spectrum, top row first. Each bin is two blocks wide.
@@ -107,11 +107,11 @@ struct ClaudeTerminalWallpaper: View {
     }
 
     private func label(_ text: String) -> Text {
-        Text(text).foregroundStyle(ClaudeTheme.cream.opacity(0.45))
+        Text(text).foregroundStyle(BrandTheme.glow.opacity(0.45))
     }
 
     private func level(_ value: Float) -> Text {
-        Text(" " + meter(value)).foregroundStyle(ClaudeTheme.terracotta)
+        Text(" " + meter(value)).foregroundStyle(BrandTheme.orange)
     }
 
     private func meter(_ value: Float, width: Int = 8) -> String {

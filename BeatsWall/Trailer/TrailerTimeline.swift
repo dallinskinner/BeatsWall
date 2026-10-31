@@ -29,14 +29,14 @@ struct TrailerTimeline {
 
     /// One showcase wallpaper per collection, in catalog order.
     static let tour = [
-        "claude.clawd", "skate.halfpipe", "synthwave.outrun-grid", "space.warp-drive", "nature.swell",
+        "beatswall.woofie", "skate.halfpipe", "synthwave.outrun-grid", "space.warp-drive", "nature.swell",
         "lofi.late-night-desk", "halloween.graveyard-rave", "arcade.star-shooter", "tokyo.ramen-alley",
         "winter.snow-globe", "deepsea.jellyfish-bloom", "minimal.breathing-rings", "cyber.hologram",
         "jungle.parrot-party", "desert.campfire",
     ]
     static let shufflePool = [
         "synthwave.neon-palms", "space.nebula", "cyber.code-rain", "skate.night-street", "deepsea.abyss-lure",
-        "halloween.haunted-house", "jungle.canopy", "tokyo.midnight-train", "claude.spark-field", "arcade.maze-chase",
+        "halloween.haunted-house", "jungle.canopy", "tokyo.midnight-train", "beatswall.spark-field", "arcade.maze-chase",
         "minimal.gradient-blobs", "desert.shooting-stars",
     ]
 
@@ -51,7 +51,7 @@ struct TrailerTimeline {
 
         var shots: [TrailerShot] = []
         let introEnd = bars[bar(atOrAfter: 3.8)]
-        shots.append(TrailerShot(kind: .intro, wallpaperID: "claude.spark-bloom", start: 0, end: introEnd))
+        shots.append(TrailerShot(kind: .intro, wallpaperID: "beatswall.beat-b", start: 0, end: introEnd))
 
         // Tour: one collection per bar.
         var barIndex = bar(atOrAfter: introEnd)

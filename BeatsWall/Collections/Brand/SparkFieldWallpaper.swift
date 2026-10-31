@@ -29,27 +29,25 @@ struct SparkFieldWallpaper: View {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let pulse = Double(audio.beatPulse)
 
-        graphics.fill(Path(CGRect(origin: .zero, size: size)), with: .radialGradient(
-            Gradient(colors: [ClaudeTheme.warmDark, ClaudeTheme.ink]),
-            center: center, startRadius: 0, endRadius: max(size.width, size.height) * 0.7
-        ))
+        BrandTheme.backdrop(in: &graphics, size: size)
 
         let glow = unit * (0.35 + 0.25 * Double(audio.bass))
         graphics.fill(
             Path(ellipseIn: CGRect(x: center.x - glow, y: center.y - glow, width: glow * 2, height: glow * 2)),
             with: .radialGradient(
-                Gradient(colors: [ClaudeTheme.clay.opacity(0.08 + 0.2 * Double(audio.bass)), .clear]),
+                Gradient(colors: [BrandTheme.magenta.opacity(0.1 + 0.25 * Double(audio.bass)), .clear]),
                 center: center, startRadius: 0, endRadius: glow
             )
         )
 
         graphics.blendMode = .plusLighter
         for particle in simulation.particles {
-            let point = CGPoint(x: particle.x * unit, y: particle.y * unit)
-            let heat = min(1, hypot(particle.vx, particle.vy) / 0.35)
+            let point = CGPoint(x: (particle.x + particle.burstX) * unit, y: (particle.y + particle.burstY) * unit)
+            let heat = min(1, hypot(particle.vx + particle.burstVX, particle.vy + particle.burstVY) / 0.35)
             let twinkle = 0.7 + 0.3 * sin(frame.time * 3 + particle.seed * 40)
             let radius = unit * (0.002 + 0.004 * particle.size) * (1 + 0.7 * pulse)
-            let color = ClaudeTheme.terracotta.mix(with: ClaudeTheme.cream, by: heat * 0.8)
+            // Each spark keeps its own spot on the icon's gradient and burns whiter as it speeds up.
+            let color = BrandTheme.gradient(particle.seed).mix(with: BrandTheme.glow, by: heat * 0.7)
                 .opacity((0.6 + 0.4 * heat) * twinkle)
 
             if particle.size > 0.65 {
@@ -80,6 +78,11 @@ private final class SparkFieldSimulation {
         var y: Double
         var vx: Double = 0
         var vy: Double = 0
+        /// How far the last kicks threw it from where it's drifting; springs back to zero.
+        var burstX: Double = 0
+        var burstY: Double = 0
+        var burstVX: Double = 0
+        var burstVY: Double = 0
         var size: Double
         var seed: Double
     }
@@ -108,21 +111,28 @@ private final class SparkFieldSimulation {
         for index in particles.indices {
             var particle = particles[index]
 
-            // Drift along a slowly evolving flow field.
-            let angle = sin(particle.x * 2.1 + t * 0.07) * 1.7
-                + cos(particle.y * 2.7 - t * 0.05) * 1.9
-                + sin((particle.x + particle.y) * 1.3 + t * 0.11)
+            // Drift along a slowly evolving flow. It's the curl of a stream function, so it has no
+            // sinks: sparks swirl around but never bunch up into lines.
+            let diagonal = 0.6 * 1.3 * cos((particle.x + particle.y) * 1.3 + t * 0.11)
+            let dPsiDX = 0.8 * 2.1 * cos(particle.x * 2.1 + t * 0.07) + diagonal
+            let dPsiDY = -0.7 * 2.7 * sin(particle.y * 2.7 - t * 0.05) + diagonal
             let ease = min(1, dt * 1.5)
-            particle.vx += (cos(angle) * speed - particle.vx) * ease
-            particle.vy += (sin(angle) * speed - particle.vy) * ease
+            particle.vx += (dPsiDY / 3 * speed - particle.vx) * ease
+            particle.vy += (-dPsiDX / 3 * speed - particle.vy) * ease
 
+            // Kicks throw sparks outward from the center, then a spring settles them back to where
+            // they're drifting, so the field breathes instead of piling up at the edges.
             if isBeat {
                 let dx = particle.x - centerX, dy = particle.y - 0.5
                 let distance = max(hypot(dx, dy), 0.05)
-                let impulse = burst * (0.5 + particle.seed) / (0.5 + distance * 2)
-                particle.vx += dx / distance * impulse
-                particle.vy += dy / distance * impulse
+                let impulse = 0.6 * burst * (0.5 + particle.seed) / (0.5 + distance * 2)
+                particle.burstVX += dx / distance * impulse
+                particle.burstVY += dy / distance * impulse
             }
+            particle.burstVX += (-18 * particle.burstX - 6 * particle.burstVX) * dt
+            particle.burstVY += (-18 * particle.burstY - 6 * particle.burstVY) * dt
+            particle.burstX += particle.burstVX * dt
+            particle.burstY += particle.burstVY * dt
 
             particle.x += particle.vx * dt
             particle.y += particle.vy * dt

@@ -1,11 +1,11 @@
 //
-//  ThinkingWallpaper.swift
+//  RippleGridWallpaper.swift
 //  BeatsWall
 //
 
 import SwiftUI
 
-struct ThinkingWallpaper: View {
+struct RippleGridWallpaper: View {
     let context: WallpaperContext
     @State private var clock = PhaseClock()
 
@@ -15,7 +15,7 @@ struct ThinkingWallpaper: View {
                 draw(in: &graphics, size: size, frame: frame)
             }
         }
-        .colorEffect(ClaudeTheme.grain(amount: 0.025))
+        .colorEffect(BrandTheme.grain(amount: 0.025))
     }
 
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
@@ -26,10 +26,7 @@ struct ThinkingWallpaper: View {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let maxDistance = hypot(size.width, size.height) / 2
 
-        graphics.fill(Path(rect), with: .linearGradient(
-            Gradient(colors: [ClaudeTheme.warmDark, ClaudeTheme.ink]),
-            startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)
-        ))
+        BrandTheme.backdrop(in: &graphics, size: rect.size)
 
         // Dot grid. A ripple travels outward with the melody; a ring blooms out on each beat.
         let spacing = max(size.width, size.height) / 34
@@ -47,6 +44,8 @@ struct ThinkingWallpaper: View {
                 let wave = 0.5 + 0.5 * sin(distance / maxDistance * 14 - phase)
                 let ring = exp(-pow((distance - ringRadius) / (spacing * 1.6), 2)) * pulse
                 let brightness = min(1, 0.05 + 0.25 * wave * (0.3 + Double(audio.level)) + 0.85 * ring)
+                // Magenta in the middle, warming to yellow at the edges.
+                let tint = BrandTheme.gradient(Double(distance / maxDistance) * 1.2)
 
                 let push = spacing * 0.6 * ring
                 let point = CGPoint(x: base.x + dx / distance * push, y: base.y + dy / distance * push)
@@ -57,21 +56,22 @@ struct ThinkingWallpaper: View {
                     graphics.fill(
                         Path(ellipseIn: CGRect(x: point.x - glow, y: point.y - glow, width: glow * 2, height: glow * 2)),
                         with: .radialGradient(
-                            Gradient(colors: [ClaudeTheme.terracotta.opacity(brightness * brightness * 0.5), .clear]),
+                            Gradient(colors: [tint.opacity(brightness * brightness * 0.5), .clear]),
                             center: point, startRadius: 0, endRadius: glow
                         )
                     )
                 }
                 graphics.fill(
                     Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)),
-                    with: .color(ClaudeTheme.cream.mix(with: ClaudeTheme.terracotta, by: brightness).opacity(0.2 + 0.8 * brightness))
+                    with: .color(BrandTheme.glow.mix(with: tint, by: brightness).opacity(0.2 + 0.8 * brightness))
                 )
             }
         }
 
-        // The "thinking" ellipsis: three orbs pulsing in sequence, swelling with the bass.
+        // Three orbs in the icon's colors, pulsing in sequence and swelling with the bass.
         let unit = min(size.width, size.height)
         for index in 0..<3 {
+            let color = BrandTheme.gradient(Double(index) / 2)
             let sequence = 0.5 + 0.5 * sin(phase * 1.2 - Double(index) * 0.9)
             let radius = unit * 0.022 * (1 + 0.5 * sequence + 0.6 * Double(audio.bass))
             let point = CGPoint(x: center.x + CGFloat(index - 1) * unit * 0.075, y: center.y)
@@ -79,13 +79,13 @@ struct ThinkingWallpaper: View {
             graphics.fill(
                 Path(ellipseIn: CGRect(x: point.x - glow, y: point.y - glow, width: glow * 2, height: glow * 2)),
                 with: .radialGradient(
-                    Gradient(colors: [ClaudeTheme.terracotta.opacity(0.25 + 0.35 * sequence), .clear]),
+                    Gradient(colors: [color.opacity(0.25 + 0.35 * sequence), .clear]),
                     center: point, startRadius: 0, endRadius: glow
                 )
             )
             graphics.fill(
                 Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)),
-                with: .color(ClaudeTheme.terracotta.mix(with: ClaudeTheme.cream, by: 0.35 * sequence))
+                with: .color(color.mix(with: BrandTheme.glow, by: 0.35 * sequence))
             )
         }
     }
