@@ -16,6 +16,8 @@ struct WallpaperContext {
     var renderTime: Double? = nil
     /// Frame rate cap for the desktop; previews always run at 30.
     var frameRate: Double = 60
+    /// The playing song, when Concert Mode is on.
+    var look: SongLook? = nil
 }
 
 struct Wallpaper: Identifiable {

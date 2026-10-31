@@ -21,12 +21,14 @@ struct MainStageWallpaper: View {
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
         hype.update(time: frame.time, audio: audio)
+        hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
         let beat = audio.beatProgress(at: frame.time)
         let bar = Int(beat / 4)
         let energy = hype.energy
-        let color = ConcertTheme.rigColor(bar: bar)
-        let accent = ConcertTheme.rigColor(bar: bar, offset: 2)
+        let palette = ConcertTheme.palette(context)
+        let color = ConcertTheme.rigColor(bar: bar, palette: palette)
+        let accent = ConcertTheme.rigColor(bar: bar, offset: 2, palette: palette)
 
         let stageWidth = min(size.width * 0.94, unit * 1.7)
         let stageLeft = (size.width - stageWidth) / 2
@@ -41,10 +43,24 @@ struct MainStageWallpaper: View {
         light.blendMode = .plusLighter
         ConcertTheme.glow(in: light, at: CGPoint(x: size.width / 2, y: floorY - unit * 0.2), radius: unit * 0.9, color: color, opacity: 0.12 + 0.2 * energy + 0.25 * hype.dropPulse)
 
-        // LED wall: the live spectrum, with a new look every bar.
+        // LED wall: the song's name as it starts and every eighth bar, the user's stage image on
+        // every other bar, and otherwise visuals with a new look every bar.
         let wall = CGRect(x: size.width / 2 - stageWidth * 0.3, y: trussY + unit * 0.09, width: stageWidth * 0.6, height: floorY - trussY - unit * 0.16)
         graphics.fill(Path(wall), with: .color(Color(hex: 0x05030A)))
-        drawScreen(in: light, rect: wall, frame: frame, bar: bar, color: color, accent: accent)
+        let stageImage = StageImage.shared.image
+        let pulse = Double(audio.beatPulse)
+        if let look = context.look, let age = ConcertTheme.songAge(context, frame: frame), age < audio.beatLength * 8 || bar % 8 == 7 {
+            if let stageImage {
+                ConcertTheme.screenImage(stageImage, in: graphics, rect: wall, pulse: 0, brightness: 0.35)
+            }
+            ConcertTheme.glow(in: light, at: CGPoint(x: wall.midX, y: wall.midY), radius: wall.width * 0.5, color: color, opacity: 0.25 + 0.3 * pulse)
+            ConcertTheme.marquee(look.title, in: light, at: CGPoint(x: wall.midX, y: wall.midY - wall.height * 0.08), maxWidth: wall.width * 0.88, size: wall.height * CGFloat(0.22 + 0.03 * pulse), color: color, glow: 0.6 + 0.4 * pulse)
+            ConcertTheme.marquee(look.artist, in: light, at: CGPoint(x: wall.midX, y: wall.midY + wall.height * 0.2), maxWidth: wall.width * 0.8, size: wall.height * 0.1, color: accent, glow: 0.6, weight: .bold)
+        } else if let stageImage, bar.isMultiple(of: 2) {
+            ConcertTheme.screenImage(stageImage, in: graphics, rect: wall, pulse: pulse, brightness: 0.75 + 0.25 * energy)
+        } else {
+            drawScreen(in: light, rect: wall, frame: frame, bar: bar, color: color, accent: accent)
+        }
         // Side screens.
         for side in [-1.0, 1.0] {
             let width = stageWidth * 0.13

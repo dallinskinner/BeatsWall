@@ -254,7 +254,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "BeatsWall-Info.plist";
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "BeatsWall reads the song playing in Music or Spotify so it can show synced lyrics on your wallpaper.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "BeatsWall reads the song playing in Music or Spotify so it can show synced lyrics and tailor Concert Mode to it.";
 				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "BeatsWall listens to your Mac's audio so wallpapers can react to music.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -293,7 +293,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "BeatsWall-Info.plist";
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "BeatsWall reads the song playing in Music or Spotify so it can show synced lyrics on your wallpaper.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "BeatsWall reads the song playing in Music or Spotify so it can show synced lyrics and tailor Concert Mode to it.";
 				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "BeatsWall listens to your Mac's audio so wallpapers can react to music.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

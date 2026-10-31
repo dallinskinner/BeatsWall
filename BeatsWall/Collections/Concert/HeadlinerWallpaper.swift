@@ -22,13 +22,17 @@ struct HeadlinerWallpaper: View {
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
         hype.update(time: frame.time, audio: audio)
+        hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
         let beat = audio.beatProgress(at: frame.time)
         let energy = hype.energy
         let drift = smoke.advance(to: frame.time, speed: 0.4 + 0.6 * energy)
         let center = size.width / 2
         let floorY = size.height * 0.7
-        let warm = ConcertTheme.pyro.mix(with: ConcertTheme.magenta, by: 0.5 + 0.5 * sin(beat * .pi / 8))
+        let palette = ConcertTheme.palette(context)
+        let warm = palette == ConcertTheme.rig
+            ? ConcertTheme.pyro.mix(with: ConcertTheme.magenta, by: 0.5 + 0.5 * sin(beat * .pi / 8))
+            : ConcertTheme.rigColor(bar: Int(beat / 8), palette: palette)
 
         graphics.fill(Path(CGRect(origin: .zero, size: size)), with: .color(ConcertTheme.night))
         var light = graphics
@@ -48,6 +52,21 @@ struct HeadlinerWallpaper: View {
                 graphics.fill(ConcertTheme.disc(point, unit * 0.02), with: .color(Color(hex: 0x1A1420)))
                 ConcertTheme.glow(in: light, at: point, radius: unit * CGFloat(0.03 + 0.05 * on), color: color, opacity: 0.2 + 0.8 * on * energy)
             }
+        }
+        // The user's stage image on a backdrop screen behind the band.
+        if let stageImage = StageImage.shared.image {
+            let top = size.height * 0.1 + unit * 0.27
+            let width = min(size.width * 0.62, unit * 1.1)
+            let backdrop = CGRect(x: center - width / 2, y: top, width: width, height: floorY - unit * 0.12 - top)
+            graphics.fill(Path(backdrop.insetBy(dx: -unit * 0.01, dy: -unit * 0.01)), with: .color(Color(hex: 0x0A0710)))
+            ConcertTheme.screenImage(stageImage, in: graphics, rect: backdrop, pulse: Double(audio.beatPulse) * 0.6, brightness: 0.5 + 0.35 * energy)
+        }
+        // The artist's name in lights across the rig.
+        if let look = context.look {
+            let y = size.height * 0.1 + unit * 0.1
+            let plate = CGRect(x: center - min(size.width * 0.36, unit * 0.6), y: y - unit * 0.055, width: min(size.width * 0.72, unit * 1.2), height: unit * 0.11)
+            graphics.fill(Path(roundedRect: plate, cornerRadius: unit * 0.01), with: .color(Color(hex: 0x0A0710)))
+            ConcertTheme.marquee(look.artist, in: light, at: CGPoint(x: center, y: y), maxWidth: plate.width * 0.9, size: unit * 0.075, color: warm, glow: 0.6 + 0.4 * Double(audio.beatPulse))
         }
         // Followspot on the singer.
         let singerX = center + min(unit * 0.24, size.width * 0.22)

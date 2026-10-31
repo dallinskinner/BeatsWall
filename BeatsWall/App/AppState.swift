@@ -32,6 +32,7 @@ final class AppState {
     private static let shuffleKey = "isShuffling"
     private static let shufflePoolKey = "shufflePool"
     private static let lyricsKey = "showsLyrics"
+    private static let concertKey = "isConcertMode"
     private static let reactivityKey = "reactivity"
     private static let frameRateKey = "frameRate"
     private static let pausesWhenCoveredKey = "pausesWhenCovered"
@@ -71,6 +72,18 @@ final class AppState {
     }
 
     let lyrics = LyricsController()
+
+    /// Puts on a show for the playing song: a Concert stage that suits it, in its album art's
+    /// colors, with its name on the screens. Takes over from shuffle while it's on.
+    var isConcertMode: Bool {
+        didSet {
+            UserDefaults.standard.set(isConcertMode, forKey: Self.concertKey)
+            updateConcert()
+            updateShuffle()
+        }
+    }
+
+    let concert = ConcertShow()
 
     /// How strongly wallpapers react: 1 is as analyzed, up to 2x for quiet setups.
     var reactivity: Double {
@@ -149,6 +162,7 @@ final class AppState {
         isShuffling = defaults.bool(forKey: Self.shuffleKey)
         shufflePool = defaults.string(forKey: Self.shufflePoolKey).flatMap(ShufflePool.init(rawValue:)) ?? .collection
         showsLyrics = defaults.bool(forKey: Self.lyricsKey)
+        isConcertMode = defaults.bool(forKey: Self.concertKey)
         defaults.register(defaults: [
             Self.reactivityKey: 1.0,
             Self.frameRateKey: 60.0,
@@ -168,9 +182,10 @@ final class AppState {
         WallpaperCatalog.wallpaper(id: selectedWallpaperID) ?? WallpaperCatalog.wallpaper(id: WallpaperCatalog.defaultWallpaperID)!
     }
 
-    /// What's on the desktop right now: the shuffle pick, or the selection.
+    /// What's on the desktop right now: Concert Mode's stage, the shuffle pick, or the selection.
     var displayedWallpaper: Wallpaper {
-        shuffledWallpaperID.flatMap { WallpaperCatalog.wallpaper(id: $0) } ?? selectedWallpaper
+        if isConcertMode, let stage = WallpaperCatalog.wallpaper(id: concert.stageID) { return stage }
+        return shuffledWallpaperID.flatMap { WallpaperCatalog.wallpaper(id: $0) } ?? selectedWallpaper
     }
 
     /// The wallpaper for one display: its pinned wallpaper, or whatever's on the main desktop.
@@ -212,6 +227,7 @@ final class AppState {
     func shutdown() {
         stopAudio()
         lyrics.setActive(false)
+        concert.setActive(false, lyrics: lyrics) { AudioFeatures() }
         shuffleTimer?.invalidate()
     }
 
@@ -219,6 +235,14 @@ final class AppState {
         updateAudio()
         updateShuffle()
         updateLyrics()
+        updateConcert()
+    }
+
+    private func updateConcert() {
+        guard isStarted else { return }
+        concert.setActive(isConcertMode && isRendering, lyrics: lyrics) { [weak self] in
+            self?.desktopSource.read() ?? AudioFeatures()
+        }
     }
 
     private func updateLyrics() {
@@ -230,7 +254,7 @@ final class AppState {
 
     /// Watches for beats ~30 times a second while shuffling and switches on each bar's downbeat.
     private func updateShuffle() {
-        let shouldRun = isStarted && isShuffling && isRendering
+        let shouldRun = isStarted && isShuffling && !isConcertMode && isRendering
         if shouldRun, shuffleTimer == nil {
             shuffleBeat = BeatEdge()
             shuffleTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in

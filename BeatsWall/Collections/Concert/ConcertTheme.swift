@@ -25,8 +25,69 @@ enum ConcertTheme {
     }
 
     /// The light color for a bar, so every fixture in the rig changes together.
-    static func rigColor(bar: Int, offset: Int = 0) -> Color {
-        rig[((bar + offset) % rig.count + rig.count) % rig.count]
+    static func rigColor(bar: Int, offset: Int = 0, palette: [Color] = rig) -> Color {
+        palette[((bar + offset) % palette.count + palette.count) % palette.count]
+    }
+
+    /// The rig's colors: the playing song's album art in Concert Mode, else the user's stage
+    /// image, else the house lights.
+    static func palette(_ context: WallpaperContext) -> [Color] {
+        context.look?.colors ?? StageImage.shared.colors ?? rig
+    }
+
+    /// Seconds since the current song started, or nil without one.
+    static func songAge(_ context: WallpaperContext, frame: AudioFrame) -> Double? {
+        guard let look = context.look else { return nil }
+        // Offline renders start the song with the clip.
+        return context.renderTime != nil ? frame.time : Date().timeIntervalSince(look.startedAt)
+    }
+
+    /// Glowing stage type, shrunk to fit `maxWidth`.
+    static func marquee(
+        _ string: String, in graphics: GraphicsContext, at center: CGPoint, maxWidth: CGFloat, size: CGFloat,
+        color: Color, glow: Double, weight: Font.Weight = .heavy
+    ) {
+        guard !string.isEmpty, maxWidth > 0 else { return }
+        func resolve(_ size: CGFloat) -> GraphicsContext.ResolvedText {
+            graphics.resolve(Text(string.uppercased()).font(.system(size: size, weight: weight, design: .rounded)).foregroundStyle(Color.white.mix(with: color, by: 0.3)))
+        }
+        var text = resolve(size)
+        let width = text.measure(in: CGSize(width: CGFloat.infinity, height: CGFloat.infinity)).width
+        if width > maxWidth { text = resolve(max(size * maxWidth / width, size * 0.3)) }
+        graphics.drawLayer { layer in
+            layer.addFilter(.shadow(color: color.opacity(glow), radius: size * 0.35))
+            layer.addFilter(.shadow(color: color.opacity(glow), radius: size * 0.08))
+            layer.draw(text, at: center)
+        }
+    }
+
+    /// The user's stage image on an LED screen: filling `rect`, flaring on the beat, with
+    /// faint scan lines.
+    static func screenImage(_ image: CGImage, in graphics: GraphicsContext, rect: CGRect, pulse: Double, brightness: Double = 1) {
+        var screen = graphics
+        screen.clip(to: Path(rect))
+        let aspect = CGFloat(image.width) / CGFloat(image.height)
+        var fill = rect
+        if rect.width / rect.height > aspect {
+            fill.size.height = rect.width / aspect
+        } else {
+            fill.size.width = rect.height * aspect
+        }
+        fill.origin = CGPoint(x: rect.midX - fill.width / 2, y: rect.midY - fill.height / 2)
+        screen.opacity = brightness
+        screen.draw(Image(decorative: image, scale: 1), in: fill)
+        screen.opacity = 1
+        var lines = Path()
+        let spacing = max(2, rect.height / 90)
+        var y = rect.minY
+        while y < rect.maxY {
+            lines.addRect(CGRect(x: rect.minX, y: y, width: rect.width, height: spacing * 0.35))
+            y += spacing
+        }
+        screen.fill(lines, with: .color(.black.opacity(0.25)))
+        var flash = screen
+        flash.blendMode = .plusLighter
+        flash.fill(Path(rect), with: .color(.white.opacity(0.15 * pulse)))
     }
 
     static func disc(_ center: CGPoint, _ radius: CGFloat) -> Path {
@@ -215,6 +276,23 @@ final class HypeMeter {
     private var lastTime: Double?
     private var beats = BeatEdge()
     private var loudBeats = 0
+    private var cue: Date?
+
+    /// Fires a drop when a new song starts, so each song opens with a moment.
+    func cue(_ songStart: Date?) {
+        guard let songStart, songStart != cue else { return }
+        cue = songStart
+        drop()
+    }
+
+    private func drop() {
+        secondsSinceDrop = 0
+        dropPulse = 1
+        dropCount += 1
+        build = 0
+        loudBeats = 0
+        valley = fast
+    }
 
     func update(time: Double, audio: AudioFeatures) {
         let delta = lastTime.map { min(max(time - $0, 0), 0.1) } ?? 0
@@ -239,12 +317,7 @@ final class HypeMeter {
         let isDrop = fast > slow + 0.12 && fast - valley > 0.22 && audio.bass > 0.5
         let isMoment = loudBeats >= 16 && secondsSinceDrop > barLength * 8
         if !coolingDown, isDrop || isMoment {
-            secondsSinceDrop = 0
-            dropPulse = 1
-            dropCount += 1
-            build = 0
-            loudBeats = 0
-            valley = fast
+            drop()
         }
     }
 }

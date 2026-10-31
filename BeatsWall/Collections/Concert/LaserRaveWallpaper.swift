@@ -22,14 +22,17 @@ struct LaserRaveWallpaper: View {
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
         hype.update(time: frame.time, audio: audio)
+        hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
         let beat = audio.beatProgress(at: frame.time)
         let bar = Int(beat / 4)
         let energy = hype.energy
         let rotation = spin.advance(to: frame.time, speed: 0.2 + 0.8 * energy + 2 * hype.dropPulse)
         let booth = CGPoint(x: size.width / 2, y: size.height * 0.56)
-        let primary = bar.isMultiple(of: 2) ? ConcertTheme.laserGreen : ConcertTheme.magenta
-        let secondary = bar.isMultiple(of: 2) ? ConcertTheme.ice : ConcertTheme.laserGreen
+        let palette = ConcertTheme.palette(context)
+        let isHouseRig = palette == ConcertTheme.rig
+        let primary = isHouseRig ? (bar.isMultiple(of: 2) ? ConcertTheme.laserGreen : ConcertTheme.magenta) : ConcertTheme.rigColor(bar: bar, palette: palette)
+        let secondary = isHouseRig ? (bar.isMultiple(of: 2) ? ConcertTheme.ice : ConcertTheme.laserGreen) : ConcertTheme.rigColor(bar: bar, offset: 1, palette: palette)
 
         // A dark warehouse: girders and tall windows, barely visible through the fog.
         graphics.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(hex: 0x040308)))
@@ -45,6 +48,14 @@ struct LaserRaveWallpaper: View {
         }
         girders.addRect(CGRect(x: 0, y: size.height * 0.07, width: size.width, height: unit * 0.014))
         graphics.fill(girders, with: .color(Color(hex: 0x0E0C16)))
+
+        // The user's stage image on a screen behind the DJ, under the lasers.
+        if let stageImage = StageImage.shared.image {
+            let width = min(size.width * 0.5, unit * 0.7)
+            let screen = CGRect(x: booth.x - width / 2, y: booth.y - unit * 0.1 - width * 9 / 16, width: width, height: width * 9 / 16)
+            graphics.fill(Path(screen.insetBy(dx: -unit * 0.008, dy: -unit * 0.008)), with: .color(Color(hex: 0x0B0912)))
+            ConcertTheme.screenImage(stageImage, in: graphics, rect: screen, pulse: Double(audio.beatPulse), brightness: 0.55 + 0.35 * energy)
+        }
 
         var light = graphics
         light.blendMode = .plusLighter
@@ -123,6 +134,9 @@ struct LaserRaveWallpaper: View {
         graphics.fill(dj, with: .color(silhouette))
         graphics.fill(Path(deck), with: .color(Color(hex: 0x0B0912)))
         light.stroke(Path(CGRect(x: deck.minX, y: deck.minY, width: deck.width, height: 0)), with: .color(primary.opacity(0.5 + 0.5 * Double(audio.beatPulse))), lineWidth: unit * 0.003)
+        if let look = context.look {
+            ConcertTheme.marquee(look.title, in: light, at: CGPoint(x: deck.midX, y: deck.midY), maxWidth: deck.width * 0.9, size: deck.height * 0.4, color: primary, glow: 0.7 + 0.3 * Double(audio.beatPulse))
+        }
 
         // The crowd, packed and jumping.
         let rows: [(baseline: CGFloat, scale: CGFloat, count: Int, color: Color)] = [

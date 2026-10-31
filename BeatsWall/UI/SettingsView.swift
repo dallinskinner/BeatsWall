@@ -66,6 +66,33 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Concert") {
+                Toggle(isOn: $appState.isConcertMode) {
+                    Text("Concert Mode")
+                    Text("Puts on a show for the song playing in Music or Spotify: the stage that suits it, lit in its album art's colors, with its name on the screens.")
+                }
+                if appState.isConcertMode {
+                    Label(appState.concert.summary, systemImage: "music.mic")
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("Stage image") {
+                    HStack {
+                        if let image = StageImage.shared.image {
+                            Image(decorative: image, scale: 1)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 64, height: 36)
+                                .clipShape(.rect(cornerRadius: 4))
+                            Button("Remove") { StageImage.shared.clear() }
+                        }
+                        Button(StageImage.shared.image == nil ? "Choose…" : "Change…") { StageImage.shared.choose() }
+                    }
+                }
+                Text("Your own picture on the screens of every Concert stage, including recorded clips.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Performance") {
                 Picker("Frame rate", selection: $appState.frameRate) {
                     Text("Smooth · 60 fps").tag(60.0)

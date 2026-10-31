@@ -21,6 +21,8 @@ nonisolated struct NowPlaying: Sendable, Equatable {
     /// Seconds into the track when this was read.
     var position: Double
     var isPlaying: Bool
+    /// Apple Music's genre tag. Spotify doesn't share one.
+    var genre = ""
 
     /// Identifies the song, ignoring playback position.
     var trackKey: String { "\(player.rawValue)|\(artist)|\(title)" }
@@ -40,8 +42,17 @@ nonisolated final class NowPlayingReader: @unchecked Sendable {
         tell application id "com.apple.Music"
             if player state is stopped then return {"stopped"}
             set t to current track
-            return {player state as text, name of t, artist of t, album of t, duration of t, player position}
+            return {player state as text, name of t, artist of t, album of t, duration of t, player position, genre of t}
         end tell
+        """)
+    nonisolated(unsafe) private static let musicArtworkScript = NSAppleScript(source: """
+        tell application id "com.apple.Music"
+            if (count of artworks of current track) is 0 then return ""
+            return raw data of artwork 1 of current track
+        end tell
+        """)
+    nonisolated(unsafe) private static let spotifyArtworkScript = NSAppleScript(source: """
+        tell application id "com.spotify.client" to return artwork url of current track
         """)
     nonisolated(unsafe) private static let spotifyScript = NSAppleScript(source: """
         tell application id "com.spotify.client"
@@ -74,6 +85,28 @@ nonisolated final class NowPlayingReader: @unchecked Sendable {
         }
     }
 
+    /// The current track's album art as image data: straight from Music, or downloaded from
+    /// the URL Spotify gives.
+    func artwork(from player: NowPlaying.Player) async -> Data? {
+        let descriptor: NSAppleEventDescriptor? = await withCheckedContinuation { continuation in
+            queue.async {
+                var error: NSDictionary?
+                let script = player == .music ? Self.musicArtworkScript : Self.spotifyArtworkScript
+                let result = script?.executeAndReturnError(&error)
+                continuation.resume(returning: error == nil ? result : nil)
+            }
+        }
+        guard let descriptor else { return nil }
+        switch player {
+        case .music:
+            let data = descriptor.data
+            return data.isEmpty ? nil : data
+        case .spotify:
+            guard let string = descriptor.stringValue, let url = URL(string: string), url.scheme == "https" else { return nil }
+            return try? await URLSession.shared.data(from: url).0
+        }
+    }
+
     private static func parse(_ descriptor: NSAppleEventDescriptor, player: NowPlaying.Player) -> NowPlaying? {
         guard descriptor.numberOfItems >= 6,
               let state = descriptor.atIndex(1)?.stringValue,
@@ -86,7 +119,8 @@ nonisolated final class NowPlayingReader: @unchecked Sendable {
             album: descriptor.atIndex(4)?.stringValue ?? "",
             duration: descriptor.atIndex(5)?.doubleValue ?? 0,
             position: descriptor.atIndex(6)?.doubleValue ?? 0,
-            isPlaying: state == "playing"
+            isPlaying: state == "playing",
+            genre: descriptor.numberOfItems >= 7 ? descriptor.atIndex(7)?.stringValue ?? "" : ""
         )
     }
 }

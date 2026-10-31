@@ -21,7 +21,9 @@ struct LightsUpWallpaper: View {
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
         hype.update(time: frame.time, audio: audio)
+        hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
+        let palette = ConcertTheme.palette(context)
         let beat = audio.beatProgress(at: frame.time)
         let energy = hype.energy
         let center = size.width / 2
@@ -48,13 +50,13 @@ struct LightsUpWallpaper: View {
             guard hash01(count, 7) < energy * 0.8 else { continue }
             let age = (audio.secondsSinceBeat.isFinite ? audio.secondsSinceBeat : 0) + Double(back) * audio.beatLength
             let point = CGPoint(x: size.width * CGFloat(0.15 + 0.7 * hash01(count, 8)), y: rimY * CGFloat(0.2 + 0.5 * hash01(count, 9)))
-            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * CGFloat(0.12 + 0.1 * hash01(count, 10)), color: ConcertTheme.rigColor(bar: count), seed: count, count: context.isPreview ? 18 : 36)
+            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * CGFloat(0.12 + 0.1 * hash01(count, 10)), color: ConcertTheme.rigColor(bar: count, palette: palette), seed: count, count: context.isPreview ? 18 : 36)
         }
         let dropAge = hype.secondsSinceDrop
         for index in 0..<6 {
             let age = dropAge - Double(index) * 0.18
             let point = CGPoint(x: size.width * CGFloat(0.1 + 0.8 * hash01(index, hype.dropCount + 50)), y: rimY * CGFloat(0.15 + 0.45 * hash01(index, hype.dropCount + 60)))
-            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * 0.2, color: ConcertTheme.rigColor(bar: index + hype.dropCount), seed: index * 13 + hype.dropCount, count: context.isPreview ? 20 : 44)
+            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * 0.2, color: ConcertTheme.rigColor(bar: index + hype.dropCount, palette: palette), seed: index * 13 + hype.dropCount, count: context.isPreview ? 20 : 44)
         }
 
         // The stadium bowl: far stands curving down to the field, with floodlight towers.
@@ -76,13 +78,25 @@ struct LightsUpWallpaper: View {
         }
 
         // Far stage with a big screen pulsing to the music.
-        let screen = CGRect(x: center - unit * 0.16, y: fieldY - unit * 0.2, width: unit * 0.32, height: unit * 0.13)
+        // It grows to show the user's stage image or the song's name.
+        let stageImage = StageImage.shared.image
+        let showsMore = stageImage != nil || context.look != nil
+        let screenSize = showsMore ? CGSize(width: unit * 0.44, height: unit * 0.25) : CGSize(width: unit * 0.32, height: unit * 0.13)
+        let screen = CGRect(x: center - screenSize.width / 2, y: fieldY - unit * 0.07 - screenSize.height, width: screenSize.width, height: screenSize.height)
         graphics.fill(Path(screen.insetBy(dx: -unit * 0.006, dy: -unit * 0.006)), with: .color(Color(hex: 0x0A0712)))
-        let screenColor = ConcertTheme.rigColor(bar: Int(beat / 4))
-        light.fill(Path(screen), with: .radialGradient(
-            Gradient(colors: [screenColor.opacity(0.4 + 0.5 * Double(audio.beatPulse)), screenColor.opacity(0.15)]),
-            center: CGPoint(x: screen.midX, y: screen.midY), startRadius: 0, endRadius: screen.width * 0.6
-        ))
+        let screenColor = ConcertTheme.rigColor(bar: Int(beat / 4), palette: palette)
+        if let stageImage {
+            ConcertTheme.screenImage(stageImage, in: graphics, rect: screen, pulse: Double(audio.beatPulse), brightness: context.look == nil ? 0.8 : 0.4)
+        } else {
+            light.fill(Path(screen), with: .radialGradient(
+                Gradient(colors: [screenColor.opacity(0.4 + 0.5 * Double(audio.beatPulse)), screenColor.opacity(0.15)]),
+                center: CGPoint(x: screen.midX, y: screen.midY), startRadius: 0, endRadius: screen.width * 0.6
+            ))
+        }
+        if let look = context.look {
+            ConcertTheme.marquee(look.title, in: light, at: CGPoint(x: screen.midX, y: screen.midY - screen.height * 0.1), maxWidth: screen.width * 0.85, size: screen.height * 0.2, color: screenColor, glow: 0.8)
+            ConcertTheme.marquee(look.artist, in: light, at: CGPoint(x: screen.midX, y: screen.midY + screen.height * 0.2), maxWidth: screen.width * 0.75, size: screen.height * 0.1, color: screenColor, glow: 0.6, weight: .bold)
+        }
         var wave = Path()
         for step in 0...40 {
             let t = Double(step) / 40
@@ -91,7 +105,9 @@ struct LightsUpWallpaper: View {
             let point = CGPoint(x: screen.minX + screen.width * CGFloat(t), y: y)
             step == 0 ? wave.move(to: point) : wave.addLine(to: point)
         }
-        light.stroke(wave, with: .color(.white.opacity(0.8)), lineWidth: unit * 0.003)
+        if !showsMore {
+            light.stroke(wave, with: .color(.white.opacity(0.8)), lineWidth: unit * 0.003)
+        }
         graphics.fill(Path(CGRect(x: center - unit * 0.24, y: fieldY - unit * 0.06, width: unit * 0.48, height: unit * 0.04)), with: .color(Color(hex: 0x0A0712)))
         for index in 0..<5 {
             let t = Double(index) / 4

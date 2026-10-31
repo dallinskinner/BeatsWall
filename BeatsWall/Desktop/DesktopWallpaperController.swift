@@ -123,7 +123,7 @@ private struct DesktopWallpaperView: View {
         let wallpaper = appState.wallpaper(forDisplay: displayID)
         ZStack {
             wallpaper
-                .makeView(WallpaperContext(source: appState.desktopSource, isPaused: !appState.isRendering, isPreview: false, frameRate: appState.frameRate))
+                .makeView(WallpaperContext(source: appState.desktopSource, isPaused: !appState.isRendering, isPreview: false, frameRate: appState.frameRate, look: appState.isConcertMode ? appState.concert.look : nil))
                 .id(wallpaper.id)
             if appState.showsLyrics {
                 LyricsOverlay(lyrics: appState.lyrics, source: appState.desktopSource, isPaused: !appState.isRendering)

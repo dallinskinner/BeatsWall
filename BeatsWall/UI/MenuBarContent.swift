@@ -25,13 +25,27 @@ struct MenuBarContent: View {
 
         Divider()
 
+        Toggle("Concert Mode", isOn: $appState.isConcertMode)
+            .keyboardShortcut("k")
+        if appState.isConcertMode {
+            Text("🎤 \(appState.concert.summary)")
+        }
+        Button(StageImage.shared.image == nil ? "Stage Image…" : "Change Stage Image…") { StageImage.shared.choose() }
+        if StageImage.shared.image != nil {
+            Button("Remove Stage Image") { StageImage.shared.clear() }
+        }
+
+        Divider()
+
         Toggle("Shuffle Every Bar", isOn: $appState.isShuffling)
             .keyboardShortcut("s")
+            .disabled(appState.isConcertMode)
         Picker("Shuffle From", selection: $appState.shufflePool) {
             ForEach(AppState.ShufflePool.allCases) { pool in
                 Text(pool.title).tag(pool)
             }
         }
+        .disabled(appState.isConcertMode)
         Toggle("Show Lyrics", isOn: $appState.showsLyrics)
             .keyboardShortcut("l")
         if appState.showsLyrics, let track = appState.lyrics.track {
