@@ -61,8 +61,9 @@ enum ConcertTheme {
         }
     }
 
-    /// The user's stage image on an LED screen: filling `rect`, flaring on the beat, with
-    /// faint scan lines.
+    /// The user's stage image on an LED screen, flaring on the beat, with faint scan lines.
+    /// Images close to the screen's shape fill it; wide logos and tall photos are shown whole
+    /// over a dim, filled copy of themselves.
     static func screenImage(_ image: CGImage, in graphics: GraphicsContext, rect: CGRect, pulse: Double, brightness: Double = 1) {
         var screen = graphics
         screen.clip(to: Path(rect))
@@ -74,8 +75,23 @@ enum ConcertTheme {
             fill.size.width = rect.height * aspect
         }
         fill.origin = CGPoint(x: rect.midX - fill.width / 2, y: rect.midY - fill.height / 2)
-        screen.opacity = brightness
-        screen.draw(Image(decorative: image, scale: 1), in: fill)
+        let picture = Image(decorative: image, scale: 1)
+        let mismatch = max(aspect, rect.width / rect.height) / min(aspect, rect.width / rect.height)
+        if mismatch > 1.3 {
+            screen.opacity = brightness * 0.1
+            screen.draw(picture, in: fill)
+            var fit = rect.insetBy(dx: rect.width * 0.05, dy: rect.height * 0.05)
+            if fit.width / fit.height > aspect {
+                fit = CGRect(x: fit.midX - fit.height * aspect / 2, y: fit.minY, width: fit.height * aspect, height: fit.height)
+            } else {
+                fit = CGRect(x: fit.minX, y: fit.midY - fit.width / aspect / 2, width: fit.width, height: fit.width / aspect)
+            }
+            screen.opacity = brightness
+            screen.draw(picture, in: fit)
+        } else {
+            screen.opacity = brightness
+            screen.draw(picture, in: fill)
+        }
         screen.opacity = 1
         var lines = Path()
         let spacing = max(2, rect.height / 90)

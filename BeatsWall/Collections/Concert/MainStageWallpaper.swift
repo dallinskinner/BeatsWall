@@ -51,7 +51,7 @@ struct MainStageWallpaper: View {
         let pulse = Double(audio.beatPulse)
         if let look = context.look, let age = ConcertTheme.songAge(context, frame: frame), age < audio.beatLength * 8 || bar % 8 == 7 {
             if let stageImage {
-                ConcertTheme.screenImage(stageImage, in: graphics, rect: wall, pulse: 0, brightness: 0.35)
+                ConcertTheme.screenImage(stageImage, in: graphics, rect: wall, pulse: 0, brightness: 0.15)
             }
             ConcertTheme.glow(in: light, at: CGPoint(x: wall.midX, y: wall.midY), radius: wall.width * 0.5, color: color, opacity: 0.25 + 0.3 * pulse)
             ConcertTheme.marquee(look.title, in: light, at: CGPoint(x: wall.midX, y: wall.midY - wall.height * 0.08), maxWidth: wall.width * 0.88, size: wall.height * CGFloat(0.22 + 0.03 * pulse), color: color, glow: 0.6 + 0.4 * pulse)

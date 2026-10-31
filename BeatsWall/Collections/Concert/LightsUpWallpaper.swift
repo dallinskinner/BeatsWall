@@ -86,7 +86,7 @@ struct LightsUpWallpaper: View {
         graphics.fill(Path(screen.insetBy(dx: -unit * 0.006, dy: -unit * 0.006)), with: .color(Color(hex: 0x0A0712)))
         let screenColor = ConcertTheme.rigColor(bar: Int(beat / 4), palette: palette)
         if let stageImage {
-            ConcertTheme.screenImage(stageImage, in: graphics, rect: screen, pulse: Double(audio.beatPulse), brightness: context.look == nil ? 0.8 : 0.4)
+            ConcertTheme.screenImage(stageImage, in: graphics, rect: screen, pulse: Double(audio.beatPulse), brightness: context.look == nil ? 0.8 : 0.2)
         } else {
             light.fill(Path(screen), with: .radialGradient(
                 Gradient(colors: [screenColor.opacity(0.4 + 0.5 * Double(audio.beatPulse)), screenColor.opacity(0.15)]),
