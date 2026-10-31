@@ -5,12 +5,13 @@
 
 import SwiftUI
 
-/// First-run walkthrough: what BeatsWall is, the audio permission, a first collection, extras.
+/// First-run walkthrough: what BeatsWall is, the audio permission, a first collection, the
+/// creator features, extras.
 struct OnboardingView: View {
     static let completedKey = "hasCompletedOnboarding"
 
     private enum Step: Int, CaseIterable {
-        case welcome, sound, collection, finish
+        case welcome, sound, collection, show, finish
     }
 
     @Environment(AppState.self) private var appState
@@ -18,6 +19,7 @@ struct OnboardingView: View {
     @AppStorage(Self.completedKey) private var hasCompletedOnboarding = false
     @State private var step: Step
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
+    @AppStorage("creatorHandle") private var handle = ""
 
     /// `page` opens partway through, for previews.
     init(page: Int = 0) {
@@ -33,6 +35,7 @@ struct OnboardingView: View {
                 case .welcome: welcome
                 case .sound: sound
                 case .collection: collection
+                case .show: show
                 case .finish: finish
                 }
             }
@@ -183,6 +186,40 @@ struct OnboardingView: View {
         }
     }
 
+    private var show: some View {
+        @Bindable var appState = appState
+        return VStack(alignment: .leading, spacing: 14) {
+            Label("Make it a show", systemImage: "music.mic")
+                .font(.title.weight(.bold))
+            Form {
+                Toggle(isOn: $appState.isConcertMode) {
+                    Text("Concert Mode")
+                    Text("A concert stage for whatever's playing in Music or Spotify, lit in its album art's colors with its name on the screens.")
+                }
+                LabeledContent("Stage image") {
+                    HStack {
+                        if let image = StageImage.shared.image {
+                            Image(decorative: image, scale: 1)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 48, height: 27)
+                                .clipShape(.rect(cornerRadius: 3))
+                        }
+                        Button(StageImage.shared.image == nil ? "Choose…" : "Change…") { StageImage.shared.choose() }
+                    }
+                }
+                TextField("Your handle", text: $handle, prompt: Text("@yourname"))
+            }
+            .formStyle(.grouped)
+            Label("Record Clip… in the menu bar turns any wallpaper and song into a video for TikTok, Reels or Shorts, credited to your handle.", systemImage: "film")
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Label("Show Mode (⌘F) plays the wallpaper full screen on a TV or second monitor, for filming your setup.", systemImage: "tv")
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var finish: some View {
         @Bindable var appState = appState
         return VStack(alignment: .leading, spacing: 16) {
@@ -204,9 +241,6 @@ struct OnboardingView: View {
                 }
             }
             .formStyle(.grouped)
-            Label("Record Clip… in the menu bar turns any wallpaper and song into a video for TikTok, Reels or Shorts.", systemImage: "film")
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
