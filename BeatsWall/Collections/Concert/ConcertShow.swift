@@ -92,7 +92,12 @@ final class ConcertShow {
     private(set) var status = Status.idle
     private(set) var track: NowPlaying?
     private(set) var look: SongLook?
-    private(set) var stageID = "concert.main-stage"
+    /// The stage picked to suit the song.
+    private(set) var suggestedStageID = "concert.main-stage"
+    /// A stage the user chose to always use, or nil to let the song decide.
+    var chosenStageID: String?
+
+    var stageID: String { chosenStageID ?? suggestedStageID }
 
     @ObservationIgnored private let reader = NowPlayingReader()
     @ObservationIgnored private var pollTimer: Timer?
@@ -203,7 +208,7 @@ final class ConcertShow {
             colors: artworkColors[key] ?? ArtworkPalette.colors(seed: key), startedAt: Date()
         )
         listening = Listening(genreStage: Self.stage(forGenre: info.genre))
-        if let stage = listening.genreStage { stageID = stage }
+        if let stage = listening.genreStage { suggestedStageID = stage }
         guard artworkColors[key] == nil else { return }
         Task {
             let data = await reader.artwork(from: info.player)
@@ -249,7 +254,7 @@ final class ConcertShow {
         let due = listening.picks == 0 ? 8.0 : 20.0
         guard listening.genreStage == nil, listening.picks < 2, listening.seconds >= due, listening.heard >= 8 else { return }
         listening.picks += 1
-        stageID = pickStage()
+        suggestedStageID = pickStage()
     }
 
     private func pickStage() -> String {

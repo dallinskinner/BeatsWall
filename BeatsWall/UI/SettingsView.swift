@@ -71,6 +71,16 @@ struct SettingsView: View {
                     Text("Concert Mode")
                     Text("Puts on a show for the song playing in Music or Spotify: the stage that suits it, lit in its album art's colors, with its name on the screens.")
                 }
+                Picker("Stage", selection: $appState.concertStageID) {
+                    Text("Automatic").tag(String?.none)
+                    ForEach(ConcertShow.stages, id: \.self) { id in
+                        Text(WallpaperCatalog.wallpaper(id: id)?.name ?? id).tag(String?.some(id))
+                    }
+                }
+
+                Text("Automatic picks the stage that suits each song.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 if appState.isConcertMode {
                     Label(appState.concert.summary, systemImage: "music.mic")
                         .foregroundStyle(.secondary)

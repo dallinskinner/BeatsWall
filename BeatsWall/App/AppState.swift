@@ -33,6 +33,7 @@ final class AppState {
     private static let shufflePoolKey = "shufflePool"
     private static let lyricsKey = "showsLyrics"
     private static let concertKey = "isConcertMode"
+    private static let concertStageKey = "concertStageID"
     private static let reactivityKey = "reactivity"
     private static let frameRateKey = "frameRate"
     private static let pausesWhenCoveredKey = "pausesWhenCovered"
@@ -84,6 +85,14 @@ final class AppState {
     }
 
     let concert = ConcertShow()
+
+    /// The Concert stage to always use, or nil to pick one that suits each song.
+    var concertStageID: String? {
+        didSet {
+            UserDefaults.standard.set(concertStageID, forKey: Self.concertStageKey)
+            concert.chosenStageID = concertStageID
+        }
+    }
 
     /// How strongly wallpapers react: 1 is as analyzed, up to 2x for quiet setups.
     var reactivity: Double {
@@ -163,6 +172,7 @@ final class AppState {
         shufflePool = defaults.string(forKey: Self.shufflePoolKey).flatMap(ShufflePool.init(rawValue:)) ?? .collection
         showsLyrics = defaults.bool(forKey: Self.lyricsKey)
         isConcertMode = defaults.bool(forKey: Self.concertKey)
+        concertStageID = defaults.string(forKey: Self.concertStageKey).flatMap { ConcertShow.stages.contains($0) ? $0 : nil }
         defaults.register(defaults: [
             Self.reactivityKey: 1.0,
             Self.frameRateKey: 60.0,
@@ -176,6 +186,7 @@ final class AppState {
         hidesDesktopIcons = defaults.bool(forKey: Self.hidesDesktopIconsKey)
         displayWallpaperIDs = defaults.dictionary(forKey: Self.displayWallpapersKey) as? [String: String] ?? [:]
         liveAudio.gain = Float(reactivity)
+        concert.chosenStageID = concertStageID
     }
 
     var selectedWallpaper: Wallpaper {

@@ -27,6 +27,13 @@ struct MenuBarContent: View {
 
         Toggle("Concert Mode", isOn: $appState.isConcertMode)
             .keyboardShortcut("k")
+        Picker("Stage", selection: $appState.concertStageID) {
+            Text("Automatic").tag(String?.none)
+            ForEach(ConcertShow.stages, id: \.self) { id in
+                Text(WallpaperCatalog.wallpaper(id: id)?.name ?? id).tag(String?.some(id))
+            }
+        }
+
         if appState.isConcertMode {
             Text("🎤 \(appState.concert.summary)")
         }
