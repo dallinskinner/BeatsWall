@@ -11,7 +11,7 @@ struct WarpDriveWallpaper: View {
 
     init(context: WallpaperContext) {
         self.context = context
-        _field = State(initialValue: WarpField(count: context.isPreview ? 200 : 650))
+        _field = State(initialValue: WarpField(count: context.isReduced ? 200 : 650))
     }
 
     var body: some View {

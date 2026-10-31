@@ -31,7 +31,7 @@ struct DuneMoonWallpaper: View {
         let gust = wind.advance(to: frame.time, speed: 0.3 + 1.2 * Double(audio.mid))
 
         DesertTheme.sky(in: &graphics, size: size, horizon: size.height * 0.62)
-        DesertTheme.drawStars(in: &graphics, size: size, maxY: size.height * 0.5, count: context.isPreview ? 80 : 160, time: frame.time, twinkle: Double(audio.treble))
+        DesertTheme.drawStars(in: &graphics, size: size, maxY: size.height * 0.5, count: context.isReduced ? 80 : 160, time: frame.time, twinkle: Double(audio.treble))
 
         // A giant moon sitting low on the horizon.
         let moon = CGPoint(x: size.width * 0.62, y: size.height * 0.46)
@@ -70,7 +70,7 @@ struct DuneMoonWallpaper: View {
 
             // Sand streaming off the crest in the wind.
             var sand = Path()
-            for grain in 0..<(context.isPreview ? 30 : 80) {
+            for grain in 0..<(context.isReduced ? 30 : 80) {
                 let start = CGFloat(hash01(grain, layer + 10)) * size.width
                 let drift = (gust * 0.2 + hash01(grain, layer + 20)).truncatingRemainder(dividingBy: 1)
                 let point = CGPoint(x: start + unit * 0.12 * CGFloat(drift), y: ridge(start, layer: layer, size: size, unit: unit) - unit * 0.03 * CGFloat(sin(.pi * drift)))

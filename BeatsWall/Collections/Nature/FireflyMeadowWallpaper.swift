@@ -61,7 +61,7 @@ struct FireflyMeadowWallpaper: View {
         drawFireflies(in: &graphics, size: size, unit: unit, horizon: horizon, frame: frame, front: false)
 
         // Grass: far blades first, swaying with the melody.
-        let blades = context.isPreview ? 140 : 320
+        let blades = context.isReduced ? 140 : 320
         var grassLayers = [Path](repeating: Path(), count: 3)
         for index in 0..<blades {
             let depth = Double(index) / Double(blades)
@@ -86,7 +86,7 @@ struct FireflyMeadowWallpaper: View {
 
     private func drawFireflies(in graphics: inout GraphicsContext, size: CGSize, unit: CGFloat, horizon: CGFloat, frame: AudioFrame, front: Bool) {
         let audio = frame.audio
-        let count = context.isPreview ? 40 : 80
+        let count = context.isReduced ? 40 : 80
         var light = graphics
         light.blendMode = .plusLighter
         for index in 0..<count where (index % 3 == 0) == front {

@@ -123,8 +123,9 @@ private struct DesktopWallpaperView: View {
         let wallpaper = appState.wallpaper(forDisplay: displayID)
         ZStack {
             wallpaper
-                .makeView(WallpaperContext(source: appState.desktopSource, isPaused: !appState.isRendering, isPreview: false, frameRate: appState.frameRate, look: appState.isConcertMode ? appState.concert.look : nil))
-                .id(wallpaper.id)
+                .makeView(WallpaperContext(source: appState.desktopSource, isPaused: !appState.isRendering, isPreview: false, frameRate: appState.frameRate, look: appState.isConcertMode ? appState.concert.look : nil, isLight: appState.lightEffects))
+                // Particle counts are set when a wallpaper starts, so switching Light mode restarts it.
+                .id("\(wallpaper.id)|\(appState.lightEffects)")
             if appState.showsLyrics {
                 LyricsOverlay(lyrics: appState.lyrics, source: appState.desktopSource, isPaused: !appState.isRendering)
             }

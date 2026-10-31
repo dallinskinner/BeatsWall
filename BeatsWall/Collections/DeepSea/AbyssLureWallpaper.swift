@@ -59,7 +59,7 @@ struct AbyssLureWallpaper: View {
 
         // Plankton glinting in the light, more with the hi-hats.
         var plankton = Path()
-        for index in 0..<(context.isPreview ? 80 : 220) {
+        for index in 0..<(context.isReduced ? 80 : 220) {
             let drift = frame.time * (0.01 + 0.02 * hash01(index, 31))
             let x = (hash01(index, 32) + drift).truncatingRemainder(dividingBy: 1)
             let point = CGPoint(x: CGFloat(x) * size.width, y: CGFloat(hash01(index, 33)) * size.height)

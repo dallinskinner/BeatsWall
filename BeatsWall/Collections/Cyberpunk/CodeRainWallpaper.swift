@@ -18,6 +18,23 @@ struct CodeRainWallpaper: View {
         }
     }
 
+    /// Each glyph as one-pixel rects, with every horizontal run of pixels merged into a single
+    /// rect, built once and placed with a transform. Thousands of glyphs draw every frame.
+    private static let glyphPaths: [Path] = CyberTheme.glyphs.map { rows in
+        var path = Path()
+        for (row, line) in rows.enumerated() {
+            let pixels = Array(line)
+            var column = 0
+            while column < pixels.count {
+                guard pixels[column] == "#" else { column += 1; continue }
+                let start = column
+                while column < pixels.count, pixels[column] == "#" { column += 1 }
+                path.addRect(CGRect(x: CGFloat(start), y: CGFloat(row), width: CGFloat(column - start) + 0.1, height: 1.1))
+            }
+        }
+        return path
+    }
+
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
         let unit = min(size.width, size.height)
@@ -28,7 +45,7 @@ struct CodeRainWallpaper: View {
         let cell = CGSize(width: pixel * 7, height: pixel * 9)
         let columns = Int(size.width / cell.width) + 1
         let rows = Int(size.height / cell.height) + 1
-        let trail = 16
+        let trail = context.isReduced ? 10 : 16
         // Brightness buckets so thousands of glyph pixels draw in a few fills.
         var buckets = [Path](repeating: Path(), count: 5)
         var heads = Path()
@@ -43,14 +60,14 @@ struct CodeRainWallpaper: View {
                 let row = head - back
                 guard row >= 0, row < rows else { continue }
                 // Glyphs mutate over time.
-                let glyph = CyberTheme.glyphs[Int(hash01(column * 131 + row, Int(frame.time * 3) + column) * Double(CyberTheme.glyphs.count))]
-                let origin = CGPoint(x: CGFloat(column) * cell.width, y: CGFloat(row) * cell.height)
+                let glyph = Self.glyphPaths[Int(hash01(column * 131 + row, Int(frame.time * 3) + column) * Double(Self.glyphPaths.count))]
+                let place = CGAffineTransform(translationX: CGFloat(column) * cell.width, y: CGFloat(row) * cell.height).scaledBy(x: pixel, y: pixel)
                 if back == 0 {
-                    heads.addPixelSprite(glyph, origin: origin, pixelWidth: pixel)
+                    heads.addPath(glyph, transform: place)
                 } else if flaring && back < 6 {
-                    flares.addPixelSprite(glyph, origin: origin, pixelWidth: pixel)
+                    flares.addPath(glyph, transform: place)
                 } else {
-                    buckets[min(back * 5 / trail, 4)].addPixelSprite(glyph, origin: origin, pixelWidth: pixel)
+                    buckets[min(back * 5 / trail, 4)].addPath(glyph, transform: place)
                 }
             }
         }
@@ -59,7 +76,9 @@ struct CodeRainWallpaper: View {
         }
         graphics.fill(flares, with: .color(CyberTheme.toxic.mix(with: .white, by: 0.6)))
         var glow = graphics
-        glow.addFilter(.shadow(color: CyberTheme.toxic, radius: pixel * 3))
+        if !context.isReduced {
+            glow.addFilter(.shadow(color: CyberTheme.toxic, radius: pixel * 3))
+        }
         glow.fill(heads, with: .color(.white))
 
         graphics.fill(Path(CGRect(origin: .zero, size: size)), with: .radialGradient(

@@ -69,7 +69,7 @@ struct LaserRaveWallpaper: View {
         let tunnel = hype.secondsSinceDrop < audio.beatLength * 16
         if tunnel {
             // After the drop: a full laser tunnel spinning out from the booth.
-            let beams = context.isPreview ? 24 : 48
+            let beams = context.isReduced ? 24 : 48
             for index in 0..<beams {
                 let angle = Double(index) / Double(beams) * 2 * .pi + rotation
                 let color = index.isMultiple(of: 2) ? primary : secondary
@@ -148,7 +148,7 @@ struct LaserRaveWallpaper: View {
             let count = Int(Double(row.count) * Double(size.width / unit) * 0.6 + 2)
             ConcertTheme.crowd(
                 in: graphics, size: size, unit: unit, baseline: row.baseline, scale: row.scale,
-                count: context.isPreview ? count / 2 + 1 : count, seed: 120 + index * 10, color: row.color, audio: audio, beat: beat,
+                count: context.isReduced ? count / 2 + 1 : count, seed: 120 + index * 10, color: row.color, audio: audio, beat: beat,
                 handsUp: 0.2 + 0.4 * energy + 0.4 * hype.dropPulse, jump: 0.3 + 0.7 * energy
             )
         }

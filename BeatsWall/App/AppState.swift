@@ -36,6 +36,7 @@ final class AppState {
     private static let concertStageKey = "concertStageID"
     private static let reactivityKey = "reactivity"
     private static let frameRateKey = "frameRate"
+    private static let lightEffectsKey = "lightEffects"
     private static let pausesWhenCoveredKey = "pausesWhenCovered"
     private static let pausesInLowPowerKey = "pausesInLowPower"
     private static let hidesDesktopIconsKey = "hidesDesktopIcons"
@@ -105,6 +106,11 @@ final class AppState {
     /// Desktop frame rate cap.
     var frameRate: Double {
         didSet { UserDefaults.standard.set(frameRate, forKey: Self.frameRateKey) }
+    }
+
+    /// Fewer particles and lights, for Macs that are also streaming or recording.
+    var lightEffects: Bool {
+        didSet { UserDefaults.standard.set(lightEffects, forKey: Self.lightEffectsKey) }
     }
 
     var pausesWhenCovered: Bool {
@@ -181,6 +187,7 @@ final class AppState {
         ])
         reactivity = defaults.double(forKey: Self.reactivityKey)
         frameRate = defaults.double(forKey: Self.frameRateKey)
+        lightEffects = defaults.bool(forKey: Self.lightEffectsKey)
         pausesWhenCovered = defaults.bool(forKey: Self.pausesWhenCoveredKey)
         pausesInLowPower = defaults.bool(forKey: Self.pausesInLowPowerKey)
         hidesDesktopIcons = defaults.bool(forKey: Self.hidesDesktopIconsKey)

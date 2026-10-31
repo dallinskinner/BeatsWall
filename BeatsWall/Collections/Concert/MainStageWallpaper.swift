@@ -147,7 +147,7 @@ struct MainStageWallpaper: View {
             }
         }
         // Confetti cannons from both sides of the stage.
-        let pieces = context.isPreview ? 60 : 180
+        let pieces = context.isReduced ? 60 : 180
         ConcertTheme.confetti(in: graphics, from: CGPoint(x: stageLeft + unit * 0.05, y: floorY), angle: 0.45, age: age, unit: unit, count: pieces, seed: hype.dropCount * 7)
         ConcertTheme.confetti(in: graphics, from: CGPoint(x: stageLeft + stageWidth - unit * 0.05, y: floorY), angle: -0.45, age: age, unit: unit, count: pieces, seed: hype.dropCount * 7 + 3)
 
@@ -161,7 +161,7 @@ struct MainStageWallpaper: View {
             let count = Int(Double(row.count) * Double(size.width / unit) * 0.6 + 2)
             ConcertTheme.crowd(
                 in: graphics, size: size, unit: unit, baseline: row.baseline, scale: row.scale,
-                count: context.isPreview ? count / 2 + 1 : count, seed: 40 + index * 10, color: row.color, audio: audio, beat: beat,
+                count: context.isReduced ? count / 2 + 1 : count, seed: 40 + index * 10, color: row.color, audio: audio, beat: beat,
                 handsUp: 0.15 + 0.5 * energy + 0.35 * hype.dropPulse, jump: 0.2 + 0.7 * energy
             )
         }

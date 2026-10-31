@@ -18,6 +18,11 @@ struct WallpaperContext {
     var frameRate: Double = 60
     /// The playing song, when Concert Mode is on.
     var look: SongLook? = nil
+    /// Lighter effects, for Macs that are also streaming or recording.
+    var isLight = false
+
+    /// Draw fewer particles and lights: for thumbnails, and in Light mode.
+    var isReduced: Bool { isPreview || isLight }
 }
 
 struct Wallpaper: Identifiable {

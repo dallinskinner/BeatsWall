@@ -11,7 +11,7 @@ struct SparkFieldWallpaper: View {
 
     init(context: WallpaperContext) {
         self.context = context
-        _simulation = State(initialValue: SparkFieldSimulation(count: context.isPreview ? 180 : 700))
+        _simulation = State(initialValue: SparkFieldSimulation(count: context.isReduced ? 180 : 700))
     }
 
     var body: some View {

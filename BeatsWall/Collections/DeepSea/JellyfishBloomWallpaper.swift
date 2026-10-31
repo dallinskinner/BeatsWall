@@ -11,7 +11,7 @@ struct JellyfishBloomWallpaper: View {
 
     init(context: WallpaperContext) {
         self.context = context
-        _bloom = State(initialValue: JellyBloom(count: context.isPreview ? 5 : 8))
+        _bloom = State(initialValue: JellyBloom(count: context.isReduced ? 5 : 8))
     }
 
     private static let colors = [DeepSeaTheme.cyan, DeepSeaTheme.pink, DeepSeaTheme.violet]
@@ -33,7 +33,7 @@ struct JellyfishBloomWallpaper: View {
             startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)
         ))
         DeepSeaTheme.drawGodRays(in: &graphics, size: size, time: frame.time, intensity: 0.7)
-        DeepSeaTheme.drawMarineSnow(in: &graphics, size: size, time: frame.time, count: context.isPreview ? 60 : 160)
+        DeepSeaTheme.drawMarineSnow(in: &graphics, size: size, time: frame.time, count: context.isReduced ? 60 : 160)
 
         var light = graphics
         light.blendMode = .plusLighter

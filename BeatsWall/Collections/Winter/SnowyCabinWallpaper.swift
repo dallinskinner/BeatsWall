@@ -74,7 +74,7 @@ struct SnowyCabinWallpaper: View {
         bank.closeSubpath()
         graphics.fill(bank, with: .color(WinterTheme.snow))
 
-        WinterTheme.drawSnowfall(in: &graphics, size: size, time: frame.time, density: Double(audio.level), maxFlakes: context.isPreview ? 150 : 400)
+        WinterTheme.drawSnowfall(in: &graphics, size: size, time: frame.time, density: Double(audio.level), maxFlakes: context.isReduced ? 150 : 400)
     }
 
     private func drawCabin(in graphics: inout GraphicsContext, size: CGSize, unit: CGFloat, ground: CGFloat, drift: Double, frame: AudioFrame) {

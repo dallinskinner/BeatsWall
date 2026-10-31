@@ -37,7 +37,7 @@ struct LightsUpWallpaper: View {
         var light = graphics
         light.blendMode = .plusLighter
         var stars = Path()
-        for index in 0..<(context.isPreview ? 50 : 120) {
+        for index in 0..<(context.isReduced ? 50 : 120) {
             let point = CGPoint(x: CGFloat(hash01(index, 1)) * size.width, y: CGFloat(hash01(index, 2)) * rimY * 0.8)
             let twinkle = 0.5 + 0.5 * sin(frame.time * (1 + 2 * hash01(index, 3)) + Double(index))
             stars.addPath(ConcertTheme.disc(point, unit * 0.0018 * CGFloat(0.6 + twinkle)))
@@ -50,13 +50,13 @@ struct LightsUpWallpaper: View {
             guard hash01(count, 7) < energy * 0.8 else { continue }
             let age = (audio.secondsSinceBeat.isFinite ? audio.secondsSinceBeat : 0) + Double(back) * audio.beatLength
             let point = CGPoint(x: size.width * CGFloat(0.15 + 0.7 * hash01(count, 8)), y: rimY * CGFloat(0.2 + 0.5 * hash01(count, 9)))
-            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * CGFloat(0.12 + 0.1 * hash01(count, 10)), color: ConcertTheme.rigColor(bar: count, palette: palette), seed: count, count: context.isPreview ? 18 : 36)
+            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * CGFloat(0.12 + 0.1 * hash01(count, 10)), color: ConcertTheme.rigColor(bar: count, palette: palette), seed: count, count: context.isReduced ? 18 : 36)
         }
         let dropAge = hype.secondsSinceDrop
         for index in 0..<6 {
             let age = dropAge - Double(index) * 0.18
             let point = CGPoint(x: size.width * CGFloat(0.1 + 0.8 * hash01(index, hype.dropCount + 50)), y: rimY * CGFloat(0.15 + 0.45 * hash01(index, hype.dropCount + 60)))
-            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * 0.2, color: ConcertTheme.rigColor(bar: index + hype.dropCount, palette: palette), seed: index * 13 + hype.dropCount, count: context.isPreview ? 20 : 44)
+            ConcertTheme.firework(in: light, at: point, age: age, radius: unit * 0.2, color: ConcertTheme.rigColor(bar: index + hype.dropCount, palette: palette), seed: index * 13 + hype.dropCount, count: context.isReduced ? 20 : 44)
         }
 
         // The stadium bowl: far stands curving down to the field, with floodlight towers.
@@ -117,7 +117,7 @@ struct LightsUpWallpaper: View {
         ConcertTheme.glow(in: light, at: CGPoint(x: center, y: fieldY - unit * 0.1), radius: unit * 0.5, color: screenColor, opacity: 0.12 + 0.2 * energy)
 
         // A sea of phone lights across the stands and the field, swaying side to side every two beats.
-        let phones = context.isPreview ? 260 : 900
+        let phones = context.isReduced ? 260 : 900
         var lights = Path()
         var warmLights = Path()
         let swayAmount = 0.4 + 0.6 * Double(audio.mid)

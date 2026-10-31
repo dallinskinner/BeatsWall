@@ -43,13 +43,13 @@ struct ShootingStarsWallpaper: View {
             layer.fill(Path(ellipseIn: CGRect(x: -size.width * 0.4, y: -unit * 0.04, width: size.width * 0.8, height: unit * 0.08)), with: .color(Color(hex: 0xE8D8F0).opacity(0.18)))
         }
         var dust = Path()
-        for index in 0..<(context.isPreview ? 200 : 600) {
+        for index in 0..<(context.isReduced ? 200 : 600) {
             let along = CGFloat(hash01(index, 1) - 0.5) * size.width * 1.4
             let across = CGFloat((hash01(index, 2) + hash01(index, 3) - 1)) * unit * 0.09
             dust.addEllipse(in: CGRect(x: along, y: across, width: unit * 0.0022, height: unit * 0.0022))
         }
         band.fill(dust, with: .color(.white.opacity(0.55)))
-        DesertTheme.drawStars(in: &graphics, size: size, maxY: horizon, count: context.isPreview ? 120 : 240, time: frame.time, twinkle: Double(audio.treble))
+        DesertTheme.drawStars(in: &graphics, size: size, maxY: horizon, count: context.isReduced ? 120 : 240, time: frame.time, twinkle: Double(audio.treble))
 
         // Constellations draw themselves as their part of the spectrum swells.
         var lines = Path()

@@ -26,7 +26,7 @@ struct CampfireWallpaper: View {
         let heat = 0.45 + 0.55 * Double(audio.bass)
 
         DesertTheme.sky(in: &graphics, size: size, horizon: horizon)
-        DesertTheme.drawStars(in: &graphics, size: size, maxY: horizon * 0.9, count: context.isPreview ? 120 : 260, time: frame.time, twinkle: Double(audio.treble))
+        DesertTheme.drawStars(in: &graphics, size: size, maxY: horizon * 0.9, count: context.isReduced ? 120 : 260, time: frame.time, twinkle: Double(audio.treble))
 
         // Distant dunes, then the campsite ground.
         for (index, (base, amplitude, color)) in [(horizon, 0.04, DesertTheme.sand.opacity(0.7)), (horizon + unit * 0.06, 0.05, DesertTheme.duneShadow)].enumerated() {
@@ -110,7 +110,7 @@ struct CampfireWallpaper: View {
 
         // Sparks rising, more of them with the hi-hats.
         var sparks = Path()
-        for index in 0..<(context.isPreview ? 30 : 70) {
+        for index in 0..<(context.isReduced ? 30 : 70) {
             let speed = 0.35 + 0.4 * hash01(index, 11)
             let cycle = frame.time * speed + hash01(index, 12)
             let progress = cycle - cycle.rounded(.down)

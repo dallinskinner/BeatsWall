@@ -11,7 +11,7 @@ struct SnowGlobeWallpaper: View {
 
     init(context: WallpaperContext) {
         self.context = context
-        _flurry = State(initialValue: GlobeSnow(count: context.isPreview ? 90 : 220))
+        _flurry = State(initialValue: GlobeSnow(count: context.isReduced ? 90 : 220))
     }
 
     var body: some View {

@@ -108,6 +108,10 @@ struct SettingsView: View {
                     Text("Smooth · 60 fps").tag(60.0)
                     Text("Light · 30 fps").tag(30.0)
                 }
+                Toggle(isOn: $appState.lightEffects) {
+                    Text("Lighter effects")
+                    Text("Fewer particles and lights. Handy while streaming or recording with OBS.")
+                }
                 Toggle("Pause when windows cover the desktop", isOn: $appState.pausesWhenCovered)
                 Toggle("Pause in Low Power Mode", isOn: $appState.pausesInLowPower)
                 if let reason = appState.pauseReason {

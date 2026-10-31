@@ -104,7 +104,7 @@ struct HeadlinerWallpaper: View {
         let age = hype.secondsSinceDrop
         ConcertTheme.sparkRain(
             in: light, span: 0...size.width, top: size.height * 0.04, floor: floorY, age: age, unit: unit,
-            count: context.isPreview ? 60 : 220, intensity: 1 - smoothstep(3, 6, age)
+            count: context.isReduced ? 60 : 220, intensity: 1 - smoothstep(3, 6, age)
         )
 
         // Smoke rolling across the stage.

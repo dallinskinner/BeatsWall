@@ -26,7 +26,7 @@ struct WhaleSongWallpaper: View {
             startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)
         ))
         DeepSeaTheme.drawGodRays(in: &graphics, size: size, time: frame.time, intensity: 1.2)
-        DeepSeaTheme.drawMarineSnow(in: &graphics, size: size, time: frame.time, count: context.isPreview ? 50 : 120, brightness: 0.35)
+        DeepSeaTheme.drawMarineSnow(in: &graphics, size: size, time: frame.time, count: context.isReduced ? 50 : 120, brightness: 0.35)
 
         // The whale glides across over about a minute, bobbing gently.
         let length = size.width * 0.62
@@ -115,7 +115,7 @@ struct WhaleSongWallpaper: View {
             y: size.height * CGFloat(0.25 + 0.1 * sin(frame.time * 0.11))
         )
         var fish = Path()
-        let count = context.isPreview ? 30 : 70
+        let count = context.isReduced ? 30 : 70
         let swirl = song.swirl
         for index in 0..<count {
             let orbit = unit * CGFloat(0.04 + 0.12 * hash01(index, 1))

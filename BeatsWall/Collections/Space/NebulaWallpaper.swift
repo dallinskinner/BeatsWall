@@ -29,7 +29,7 @@ struct NebulaWallpaper: View {
                     Canvas { graphics, size in
                         graphics.blendMode = .plusLighter
                         SpaceTheme.drawStars(
-                            in: &graphics, size: size, count: context.isPreview ? 120 : 260,
+                            in: &graphics, size: size, count: context.isReduced ? 120 : 260,
                             audio: audio, time: frame.time, drift: CGFloat(phase) * min(size.width, size.height) * 0.004
                         )
                     }
