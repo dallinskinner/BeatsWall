@@ -28,6 +28,7 @@ struct SettingsView: View {
     @AppStorage(OnboardingView.completedKey) private var hasCompletedOnboarding = false
     @State private var launchesAtLogin = LaunchAtLogin.isEnabled
     @State private var screens = NSScreen.screens
+    @AppStorage("creatorHandle") private var handle = ""
 
     var body: some View {
         @Bindable var appState = appState
@@ -62,6 +63,13 @@ struct SettingsView: View {
                     }
                 }
                 Text("Turn it up if wallpapers barely move at your listening volume.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Clips") {
+                TextField("Your handle", text: $handle, prompt: Text("@yourname"))
+                Text("Recorded clips credit you: \"@yourname · made with BeatsWall\".")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

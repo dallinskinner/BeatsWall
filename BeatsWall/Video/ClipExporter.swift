@@ -47,6 +47,10 @@ struct ClipSettings {
     var format = Format.vertical
     var showsLyrics = true
     var showsWatermark = true
+    /// The creator's handle for the watermark, without the @.
+    var handle = ""
+    /// Concert stages show the song's name and album art colors, from the file's tags.
+    var showsSongOnStage = true
 }
 
 /// One frame of a clip: the wallpaper for that moment, lyrics and the watermark.
@@ -61,14 +65,21 @@ final class ClipModel {
     let lyricsEpoch = Date(timeIntervalSinceReferenceDate: 0)
     let songStart: Double
     let showsWatermark: Bool
+    let handle: String
+    let look: SongLook?
 
-    init(wallpaperID: String, length: Double, source: OfflineAudioSource, lyrics: LyricsController?, songStart: Double, showsWatermark: Bool) {
+    init(
+        wallpaperID: String, length: Double, source: OfflineAudioSource, lyrics: LyricsController?, songStart: Double,
+        showsWatermark: Bool, handle: String = "", look: SongLook? = nil
+    ) {
         self.wallpaperID = wallpaperID
         self.length = length
         self.source = source
         self.lyrics = lyrics
         self.songStart = songStart
         self.showsWatermark = showsWatermark
+        self.handle = handle
+        self.look = look
     }
 }
 
@@ -82,7 +93,7 @@ struct ClipView: View {
             ZStack {
                 if let wallpaper = WallpaperCatalog.wallpaper(id: model.wallpaperID) {
                     wallpaper
-                        .makeView(WallpaperContext(source: model.source, isPaused: false, isPreview: false, renderTime: time))
+                        .makeView(WallpaperContext(source: model.source, isPaused: false, isPreview: false, renderTime: time, look: model.look))
                         .id(model.shotIndex)
                 }
                 if let lyrics = model.lyrics {
@@ -92,7 +103,7 @@ struct ClipView: View {
                     )
                 }
                 if model.showsWatermark {
-                    ClipWatermark(unit: unit)
+                    ClipWatermark(unit: unit, handle: model.handle)
                 }
                 // A quick fade up from black and down at the end.
                 Color.black.opacity(max(1 - time / 0.3, max(0, (time - (model.length - 0.6)) / 0.6)))
@@ -101,9 +112,17 @@ struct ClipView: View {
     }
 }
 
-/// "Made with BeatsWall", tucked into the bottom corner.
+/// "Made with BeatsWall", tucked into the bottom corner, crediting the creator when they've
+/// set a handle.
 struct ClipWatermark: View {
     let unit: CGFloat
+    var handle = ""
+
+    /// "@name" from whatever the user typed, or nil if it's blank.
+    static func credit(_ handle: String) -> String? {
+        let name = handle.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "@"))
+        return name.isEmpty ? nil : "@" + name
+    }
 
     var body: some View {
         VStack {
@@ -114,8 +133,13 @@ struct ClipWatermark: View {
                     Image(nsImage: NSApp.applicationIconImage)
                         .resizable()
                         .frame(width: unit * 0.05, height: unit * 0.05)
-                    Text("BeatsWall")
-                        .font(.system(size: unit * 0.03, weight: .heavy, design: .rounded))
+                    if let credit = Self.credit(handle) {
+                        Text("\(Text(credit).fontWeight(.heavy)) \(Text("· made with BeatsWall").fontWeight(.semibold).foregroundStyle(.white.opacity(0.8)))")
+                            .font(.system(size: unit * 0.026, design: .rounded))
+                    } else {
+                        Text("BeatsWall")
+                            .font(.system(size: unit * 0.03, weight: .heavy, design: .rounded))
+                    }
                 }
                 .foregroundStyle(.white)
                 .padding(.leading, unit * 0.012)
@@ -190,14 +214,17 @@ final class ClipExporter {
         let songStart = settings.startsAtHighlight ? analysis.loudestWindow(length: length) : 0
         let grid = BeatGrid(detectedBeats: analysis.beats.map { $0 - songStart }, length: length)
 
-        let lyrics = settings.showsLyrics ? await Self.lyrics(for: song, duration: analysis.duration) : nil
+        let info = await Self.songInfo(for: song)
+        let lyrics = settings.showsLyrics ? await Self.lyrics(for: info, duration: analysis.duration) : nil
         try Task.checkCancellation()
+        let look = settings.showsSongOnStage ? info.look : nil
 
         let pool = shufflePool(for: settings)
         let source = OfflineAudioSource(frames: analysis.frames)
         let model = ClipModel(
             wallpaperID: settings.wallpaperID, length: length, source: source,
-            lyrics: lyrics, songStart: songStart, showsWatermark: settings.showsWatermark
+            lyrics: lyrics, songStart: songStart, showsWatermark: settings.showsWatermark,
+            handle: settings.handle, look: look
         )
         let firstFrame = Int((songStart * fps).rounded())
         let job = VideoWriter.Job(
@@ -230,29 +257,52 @@ final class ClipExporter {
         return [settings.wallpaperID] + others
     }
 
+    /// What the file says about itself: title and artist tags (or a title cleaned up from the
+    /// file name) and its embedded album art.
+    struct SongInfo {
+        var title: String
+        var artist: String?
+        var artwork: CGImage?
+        /// Whether the title came from tags rather than the file name.
+        var isTagged: Bool
+
+        var look: SongLook {
+            let colors = artwork.flatMap(ArtworkPalette.colors(from:)) ?? ArtworkPalette.colors(seed: title + (artist ?? ""))
+            return SongLook(title: title, artist: artist ?? "", colors: colors, startedAt: Date(timeIntervalSinceReferenceDate: 0))
+        }
+    }
+
+    static func songInfo(for song: URL) async -> SongInfo {
+        let tags = (try? await AVURLAsset(url: song).load(.commonMetadata)) ?? []
+        func item(_ key: AVMetadataKey) -> AVMetadataItem? {
+            AVMetadataItem.metadataItems(from: tags, withKey: key, keySpace: .common).first
+        }
+        let title = try? await item(.commonKeyTitle)?.load(.stringValue)
+        let artist = try? await item(.commonKeyArtist)?.load(.stringValue)
+        let artworkData = try? await item(.commonKeyArtwork)?.load(.dataValue)
+        let artwork = artworkData.flatMap { NSImage(data: $0) }?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        if let title, let artist {
+            return SongInfo(title: title, artist: artist, artwork: artwork, isTagged: true)
+        }
+        // "Song Name (Clean Edit).mp3" → "Song Name"
+        let name = song.deletingPathExtension().lastPathComponent
+            .replacingOccurrences(of: #"\s*[\(\[].*?[\)\]]"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespaces)
+        return SongInfo(title: title ?? name, artist: artist, artwork: artwork, isTagged: false)
+    }
+
     /// Synced lyrics from LRCLIB, found from the file's title and artist tags, or failing
     /// that its name.
-    private static func lyrics(for song: URL, duration: Double) async -> LyricsController? {
-        let tags = (try? await AVURLAsset(url: song).load(.commonMetadata)) ?? []
-        func tag(_ key: AVMetadataKey) async -> String? {
-            guard let item = AVMetadataItem.metadataItems(from: tags, withKey: key, keySpace: .common).first else { return nil }
-            return try? await item.load(.stringValue)
-        }
-        let title = await tag(.commonKeyTitle)
-        let artist = await tag(.commonKeyArtist)
+    private static func lyrics(for info: SongInfo, duration: Double) async -> LyricsController? {
         let result: LyricsResult?
         let track: NowPlaying
-        if let title, let artist {
-            track = NowPlaying(player: .spotify, title: title, artist: artist, album: "", duration: duration, position: 0, isPlaying: true)
+        if info.isTagged, let artist = info.artist {
+            track = NowPlaying(player: .spotify, title: info.title, artist: artist, album: "", duration: duration, position: 0, isPlaying: true)
             result = try? await LyricsService.lyrics(for: track)
         } else {
-            // "Song Name (Clean Edit).mp3" → "Song Name"
-            let name = song.deletingPathExtension().lastPathComponent
-                .replacingOccurrences(of: #"\s*[\(\[].*?[\)\]]"#, with: "", options: .regularExpression)
-                .replacingOccurrences(of: "_", with: " ")
-                .trimmingCharacters(in: .whitespaces)
-            track = NowPlaying(player: .spotify, title: name, artist: "", album: "", duration: duration, position: 0, isPlaying: true)
-            result = try? await LyricsService.lyrics(searching: name, duration: duration)
+            track = NowPlaying(player: .spotify, title: info.title, artist: "", album: "", duration: duration, position: 0, isPlaying: true)
+            result = try? await LyricsService.lyrics(searching: info.title, duration: duration)
         }
         guard case .synced(let lines) = result, !lines.isEmpty else { return nil }
         let controller = LyricsController()

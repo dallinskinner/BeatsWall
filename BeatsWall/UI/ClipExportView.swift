@@ -13,6 +13,9 @@ struct ClipExportView: View {
     @State private var exporter = ClipExporter()
     @State private var isChoosingSong = false
     @State private var hasLoaded = false
+    @State private var songNote: String?
+    @AppStorage("creatorHandle") private var handle = ""
+    private let reader = NowPlayingReader()
 
     var body: some View {
         HStack(alignment: .top, spacing: 24) {
@@ -27,14 +30,17 @@ struct ClipExportView: View {
         }
         .padding(.leading, 24)
         .padding(.top, 24)
-        .frame(width: 760, height: 560)
+        .frame(width: 760, height: 640)
         .onAppear {
             guard !hasLoaded else { return }
             hasLoaded = true
             settings.wallpaperID = appState.selectedWallpaperID
         }
         .fileImporter(isPresented: $isChoosingSong, allowedContentTypes: [.audio]) { result in
-            if case .success(let url) = result { settings.song = url }
+            if case .success(let url) = result {
+                settings.song = url
+                songNote = nil
+            }
         }
     }
 
@@ -51,7 +57,7 @@ struct ClipExportView: View {
                 }
                 .overlay {
                     if settings.showsWatermark {
-                        GeometryReader { ClipWatermark(unit: min($0.size.width, $0.size.height)) }
+                        GeometryReader { ClipWatermark(unit: min($0.size.width, $0.size.height), handle: handle) }
                     }
                 }
                 .clipShape(.rect(cornerRadius: 12))
@@ -84,7 +90,14 @@ struct ClipExportView: View {
                             .lineLimit(1)
                             .truncationMode(.middle)
                         Button("Choose…") { isChoosingSong = true }
+                        Button("Use Current Song", action: useCurrentSong)
+                            .help("The song playing in Apple Music, if it's a file in your library")
                     }
+                }
+                if let songNote {
+                    Text(songNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Picker("Start", selection: $settings.startsAtHighlight) {
                     Text("Best part (loudest stretch)").tag(true)
@@ -104,7 +117,18 @@ struct ClipExportView: View {
                     }
                 }
                 Toggle("Synced lyrics, when they can be found for the song", isOn: $settings.showsLyrics)
+                Toggle(isOn: $settings.showsSongOnStage) {
+                    Text("Show the song on Concert stages")
+                    Text("Its title and artist on the screens, and lights in its album art's colors.")
+                }
+            }
+            Section {
                 Toggle("BeatsWall watermark", isOn: $settings.showsWatermark)
+                TextField("Your handle", text: $handle, prompt: Text("@yourname"))
+                    .disabled(!settings.showsWatermark)
+                Text("Clips credit you: \"@yourname · made with BeatsWall\".")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -157,6 +181,22 @@ struct ClipExportView: View {
         panel.nameFieldStringValue = "BeatsWall \(name).mp4"
         panel.directoryURL = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        settings.handle = handle
         exporter.export(settings, to: url)
+    }
+
+    private func useCurrentSong() {
+        Task {
+            guard let file = await reader.musicFile() else {
+                songNote = "Play a song from your Music library first. Streamed Apple Music and Spotify songs can't be recorded, so choose an audio file instead."
+                return
+            }
+            guard FileManager.default.isReadableFile(atPath: file.path) else {
+                songNote = "BeatsWall can only open songs inside your Music folder. Use Choose… to pick \(file.lastPathComponent)."
+                return
+            }
+            settings.song = file
+            songNote = nil
+        }
     }
 }

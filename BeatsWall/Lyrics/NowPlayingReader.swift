@@ -51,6 +51,14 @@ nonisolated final class NowPlayingReader: @unchecked Sendable {
             return raw data of artwork 1 of current track
         end tell
         """)
+    nonisolated(unsafe) private static let musicFileScript = NSAppleScript(source: """
+        tell application id "com.apple.Music"
+            if player state is stopped then return ""
+            set t to current track
+            if class of t is not file track then return ""
+            return POSIX path of (location of t)
+        end tell
+        """)
     nonisolated(unsafe) private static let spotifyArtworkScript = NSAppleScript(source: """
         tell application id "com.spotify.client" to return artwork url of current track
         """)
@@ -82,6 +90,19 @@ nonisolated final class NowPlayingReader: @unchecked Sendable {
                 paused = paused ?? info
             }
             completion(.success(paused))
+        }
+    }
+
+    /// The audio file of the song Apple Music is playing, or nil when nothing is playing or it's
+    /// streamed (Apple Music catalog and Spotify songs have no file to read).
+    func musicFile() async -> URL? {
+        guard !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Music").isEmpty else { return nil }
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                var error: NSDictionary?
+                let path = Self.musicFileScript?.executeAndReturnError(&error).stringValue ?? ""
+                continuation.resume(returning: error == nil && !path.isEmpty ? URL(fileURLWithPath: path) : nil)
+            }
         }
     }
 

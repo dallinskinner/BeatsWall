@@ -18,11 +18,14 @@ enum TrailerRenderer {
     static func runIfRequested() -> Bool {
         let arguments = CommandLine.arguments
         if let flag = arguments.firstIndex(of: "-renderClip"), arguments.count > flag + 4 {
-            // -renderClip <audio> <out> <wallpaper id> <vertical|landscape|square> [--shuffle]
+            // -renderClip <audio> <out> <wallpaper id> <vertical|landscape|square> [--shuffle] [--handle name]
             var settings = ClipSettings(wallpaperID: arguments[flag + 3])
             settings.song = URL(fileURLWithPath: arguments[flag + 1])
             settings.format = ClipSettings.Format(rawValue: arguments[flag + 4]) ?? .vertical
             settings.shuffles = arguments.contains("--shuffle")
+            if let index = arguments.firstIndex(of: "--handle"), arguments.count > index + 1 {
+                settings.handle = arguments[index + 1]
+            }
             let output = URL(fileURLWithPath: arguments[flag + 2])
             Task { @MainActor in
                 do {
