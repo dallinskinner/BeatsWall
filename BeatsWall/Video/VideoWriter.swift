@@ -28,7 +28,8 @@ enum VideoWriter {
         prepareFrame: (Int) -> Void,
         progress: (Double) -> Void
     ) async throws {
-        let renderer = ImageRenderer(content: view.frame(width: job.size.width, height: job.size.height))
+        let content = view.frame(width: job.size.width, height: job.size.height)
+        let renderer = ImageRenderer(content: content)
         renderer.scale = 1
 
         let silentVideo = FileManager.default.temporaryDirectory
@@ -46,6 +47,9 @@ enum VideoWriter {
 
         let frame: (Int) -> CGImage? = { index in
             prepareFrame(index)
+            // The renderer only notices model changes on a later run loop pass, so hand it the
+            // content again to make it draw this frame now. Wallpaper state carries over.
+            renderer.content = content
             return renderer.cgImage
         }
         let report: (Int) -> Void = { index in
