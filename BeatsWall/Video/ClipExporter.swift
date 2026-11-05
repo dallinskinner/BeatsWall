@@ -51,6 +51,8 @@ struct ClipSettings {
     var handle = ""
     /// Concert stages show the song's name and album art colors, from the file's tags.
     var showsSongOnStage = true
+    /// The lighting desk, so Concert and Light Show clips match what's on screen.
+    var rig = LightRig()
 }
 
 /// One frame of a clip: the wallpaper for that moment, lyrics and the watermark.
@@ -67,10 +69,11 @@ final class ClipModel {
     let showsWatermark: Bool
     let handle: String
     let look: SongLook?
+    let rig: LightRig
 
     init(
         wallpaperID: String, length: Double, source: OfflineAudioSource, lyrics: LyricsController?, songStart: Double,
-        showsWatermark: Bool, handle: String = "", look: SongLook? = nil
+        showsWatermark: Bool, handle: String = "", look: SongLook? = nil, rig: LightRig = LightRig()
     ) {
         self.wallpaperID = wallpaperID
         self.length = length
@@ -80,6 +83,7 @@ final class ClipModel {
         self.showsWatermark = showsWatermark
         self.handle = handle
         self.look = look
+        self.rig = rig
     }
 }
 
@@ -93,7 +97,7 @@ struct ClipView: View {
             ZStack {
                 if let wallpaper = WallpaperCatalog.wallpaper(id: model.wallpaperID) {
                     wallpaper
-                        .makeView(WallpaperContext(source: model.source, isPaused: false, isPreview: false, renderTime: time, look: model.look))
+                        .makeView(WallpaperContext(source: model.source, isPaused: false, isPreview: false, renderTime: time, look: model.look, rig: model.rig))
                         .id(model.shotIndex)
                 }
                 if let lyrics = model.lyrics {
@@ -224,7 +228,7 @@ final class ClipExporter {
         let model = ClipModel(
             wallpaperID: settings.wallpaperID, length: length, source: source,
             lyrics: lyrics, songStart: songStart, showsWatermark: settings.showsWatermark,
-            handle: settings.handle, look: look
+            handle: settings.handle, look: look, rig: settings.rig
         )
         let firstFrame = Int((songStart * fps).rounded())
         let job = VideoWriter.Job(

@@ -119,7 +119,7 @@ struct ClipExportView: View {
                 Toggle("Synced lyrics, when they can be found for the song", isOn: $settings.showsLyrics)
                 Toggle(isOn: $settings.showsSongOnStage) {
                     Text("Show the song on Concert stages")
-                    Text("Its title and artist on the screens, and lights in its album art's colors.")
+                    Text("Its title and artist on the screens, and lights in its album art's colors. Lighting settings apply too.")
                 }
             }
             Section {
@@ -182,6 +182,7 @@ struct ClipExportView: View {
         panel.directoryURL = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first
         guard panel.runModal() == .OK, let url = panel.url else { return }
         settings.handle = handle
+        settings.rig = appState.lightRig
         exporter.export(settings, to: url)
     }
 

@@ -18,13 +18,30 @@ enum TrailerRenderer {
     static func runIfRequested() -> Bool {
         let arguments = CommandLine.arguments
         if let flag = arguments.firstIndex(of: "-renderClip"), arguments.count > flag + 4 {
-            // -renderClip <audio> <out> <wallpaper id> <vertical|landscape|square> [--shuffle] [--handle name]
+            // -renderClip <audio> <out> <wallpaper id> <vertical|landscape|square> [--shuffle] [--handle name] [--rig settings]
             var settings = ClipSettings(wallpaperID: arguments[flag + 3])
             settings.song = URL(fileURLWithPath: arguments[flag + 1])
             settings.format = ClipSettings.Format(rawValue: arguments[flag + 4]) ?? .vertical
             settings.shuffles = arguments.contains("--shuffle")
             if let index = arguments.firstIndex(of: "--handle"), arguments.count > index + 1 {
                 settings.handle = arguments[index + 1]
+            }
+            // e.g. --rig "colors=ice,pattern=cone,strobe=off,movement=chase,fog=0.8"
+            if let index = arguments.firstIndex(of: "--rig"), arguments.count > index + 1 {
+                for pair in arguments[index + 1].split(separator: ",") {
+                    let parts = pair.split(separator: "=").map(String.init)
+                    guard parts.count == 2 else { continue }
+                    switch parts[0] {
+                    case "colors": settings.rig.colors = LightRig.Colors(rawValue: parts[1]) ?? settings.rig.colors
+                    case "pattern": settings.rig.pattern = LightRig.Pattern(rawValue: parts[1]) ?? settings.rig.pattern
+                    case "strobe": settings.rig.strobe = LightRig.Strobe(rawValue: parts[1]) ?? settings.rig.strobe
+                    case "movement": settings.rig.movement = LightRig.Movement(rawValue: parts[1]) ?? settings.rig.movement
+                    case "intensity": settings.rig.intensity = Double(parts[1]) ?? settings.rig.intensity
+                    case "fog": settings.rig.fog = Double(parts[1]) ?? settings.rig.fog
+                    case "speed": settings.rig.speed = Double(parts[1]) ?? settings.rig.speed
+                    default: break
+                    }
+                }
             }
             let output = URL(fileURLWithPath: arguments[flag + 2])
             Task { @MainActor in

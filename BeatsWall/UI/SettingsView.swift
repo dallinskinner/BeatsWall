@@ -79,14 +79,11 @@ struct SettingsView: View {
                     Text("Concert Mode")
                     Text("Puts on a show for the song playing in Music or Spotify: the stage that suits it, lit in its album art's colors, with its name on the screens.")
                 }
-                Picker("Stage", selection: $appState.concertStageID) {
-                    Text("Automatic").tag(String?.none)
-                    ForEach(ConcertShow.stages, id: \.self) { id in
-                        Text(WallpaperCatalog.wallpaper(id: id)?.name ?? id).tag(String?.some(id))
-                    }
+                ConcertStagePicker(appState: appState)
+                if appState.concert.isShuffling {
+                    ConcertShufflePicker(appState: appState)
                 }
-
-                Text("Automatic picks the stage that suits each song.")
+                Text("Automatic picks the stage that suits each song. Shuffle switches stages on each new song and every eight bars.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if appState.isConcertMode {
@@ -109,6 +106,10 @@ struct SettingsView: View {
                 Text("Your own picture on the screens of every Concert stage, including recorded clips.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Lighting") {
+                LightingSettings(appState: appState)
             }
 
             Section("Performance") {

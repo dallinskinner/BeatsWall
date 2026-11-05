@@ -17,7 +17,8 @@ struct WallpaperStage: View {
             wallpaper
                 .makeView(WallpaperContext(
                     source: appState.desktopSource, isPaused: isPaused, isPreview: false, frameRate: appState.frameRate,
-                    look: appState.isConcertMode ? appState.concert.look : nil, isLight: appState.lightEffects
+                    look: appState.isConcertMode ? appState.concert.look : nil, isLight: appState.lightEffects,
+                    rig: appState.lightRig
                 ))
                 // Particle counts are set when a wallpaper starts, so switching Light mode restarts it.
                 .id("\(wallpaper.id)|\(appState.lightEffects)")

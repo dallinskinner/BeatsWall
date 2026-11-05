@@ -32,11 +32,14 @@ struct MenuBarContent: View {
 
         Toggle("Concert Mode", isOn: $appState.isConcertMode)
             .keyboardShortcut("k")
-        Picker("Stage", selection: $appState.concertStageID) {
-            Text("Automatic").tag(String?.none)
-            ForEach(ConcertShow.stages, id: \.self) { id in
-                Text(WallpaperCatalog.wallpaper(id: id)?.name ?? id).tag(String?.some(id))
-            }
+        ConcertStagePicker(appState: appState)
+        if appState.concert.isShuffling {
+            ConcertShufflePicker(appState: appState)
+        }
+        Menu("Lighting") {
+            LightingPickers(appState: appState)
+            Divider()
+            Button("Reset Lighting") { appState.lightRig = .standard }
         }
 
         if appState.isConcertMode {

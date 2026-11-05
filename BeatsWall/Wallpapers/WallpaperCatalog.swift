@@ -10,6 +10,7 @@ enum WallpaperCatalog {
     static let collections: [WallpaperCollection] = [
         BrandCollection.collection,
         ConcertCollection.collection,
+        LightShowCollection.collection,
         SkateboardingCollection.collection,
         SynthwaveCollection.collection,
         SpaceCollection.collection,

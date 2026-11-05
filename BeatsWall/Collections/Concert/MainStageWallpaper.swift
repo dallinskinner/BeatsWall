@@ -20,6 +20,7 @@ struct MainStageWallpaper: View {
 
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
+        ConcertTheme.use(context)
         hype.update(time: frame.time, audio: audio)
         hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
@@ -107,7 +108,7 @@ struct MainStageWallpaper: View {
         for index in 0..<heads {
             let t = Double(index) / Double(heads - 1)
             let origin = CGPoint(x: stageLeft + stageWidth * CGFloat(0.08 + 0.84 * t), y: trussY + unit * 0.045)
-            let sweep = sin(beat * .pi / 2 + (index.isMultiple(of: 2) ? 0 : .pi)) * 0.45
+            let sweep = ConcertTheme.motion(index: index, count: heads, beat: beat)
             let spreadOut = (t - 0.5) * 2 * fan
             let pinch = -(t - 0.5) * 0.9 * hype.build
             let angle = (sweep + spreadOut) * (1 - hype.build * 0.7) + pinch
@@ -122,7 +123,7 @@ struct MainStageWallpaper: View {
         for index in 0..<6 {
             let t = Double(index) / 5
             let origin = CGPoint(x: stageLeft + stageWidth * CGFloat(0.12 + 0.76 * t), y: floorY)
-            let angle = .pi + (t - 0.5) * (0.5 + 0.9 * hype.dropPulse) + sin(beat * .pi / 4 + Double(index)) * 0.15
+            let angle = .pi + (t - 0.5) * (0.5 + 0.9 * hype.dropPulse) + ConcertTheme.motion(index: index, count: 6, beat: beat / 2) * 0.33
             ConcertTheme.beam(in: light, from: origin, angle: angle, length: size.height * 0.75, spread: 0.035, color: accent, intensity: 0.15 + 0.5 * Double(audio.bass) * energy)
         }
         ConcertTheme.haze(in: light, rect: CGRect(x: 0, y: trussY, width: size.width, height: floorY - trussY + unit * 0.2), color: color, opacity: 0.05 + 0.12 * hype.build)

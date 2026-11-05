@@ -20,6 +20,8 @@ struct WallpaperContext {
     var look: SongLook? = nil
     /// Lighter effects, for Macs that are also streaming or recording.
     var isLight = false
+    /// The lighting desk for the Concert and Light Show collections.
+    var rig = LightRig()
 
     /// Draw fewer particles and lights: for thumbnails, and in Light mode.
     var isReduced: Bool { isPreview || isLight }

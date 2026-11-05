@@ -21,6 +21,7 @@ struct LaserRaveWallpaper: View {
 
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
+        ConcertTheme.use(context)
         hype.update(time: frame.time, audio: audio)
         hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
@@ -63,56 +64,10 @@ struct LaserRaveWallpaper: View {
         ConcertTheme.haze(in: light, rect: CGRect(x: 0, y: size.height * 0.05, width: size.width, height: size.height * 0.85), color: primary, opacity: 0.04 + 0.08 * energy + 0.12 * hype.build)
         ConcertTheme.glow(in: light, at: booth, radius: unit * (0.4 + 0.3 * CGFloat(hype.build)), color: primary, opacity: 0.15 + 0.25 * energy)
 
-        let length = hypot(size.width, size.height)
-        let width = max(1, unit * 0.0022)
-        let intensity = 0.35 + 0.5 * energy + 0.3 * Double(audio.beatPulse)
-        let tunnel = hype.secondsSinceDrop < audio.beatLength * 16
-        if tunnel {
-            // After the drop: a full laser tunnel spinning out from the booth.
-            let beams = context.isReduced ? 24 : 48
-            for index in 0..<beams {
-                let angle = Double(index) / Double(beams) * 2 * .pi + rotation
-                let color = index.isMultiple(of: 2) ? primary : secondary
-                ConcertTheme.laser(in: light, from: booth, angle: angle, length: length, color: color, intensity: intensity, width: width)
-            }
-            var rings = light
-            rings.opacity = 0.5
-            for ring in 0..<4 {
-                let phase = (Double(ring) + beat.truncatingRemainder(dividingBy: 1)) / 4
-                rings.stroke(ConcertTheme.disc(booth, length * 0.5 * CGFloat(phase * phase)), with: .color(secondary.opacity(1 - phase)), lineWidth: width * 2)
-            }
-        } else {
-            // A new laser look every bar. The fan narrows and speeds up while it builds.
-            let beams = 9 + Int(8 * energy)
-            switch bar % 3 {
-            case 0:
-                // A fan sweeping across the ceiling.
-                let center = .pi + sin(beat * .pi / 2) * 0.6
-                let spread = 1.4 * (1 - 0.6 * hype.build)
-                for index in 0..<beams {
-                    let t = Double(index) / Double(beams - 1) - 0.5
-                    ConcertTheme.laser(in: light, from: booth, angle: center + t * spread, length: length, color: primary, intensity: intensity, width: width)
-                }
-            case 1:
-                // Two emitters crossing over the crowd.
-                for side in [-1.0, 1.0] {
-                    let origin = CGPoint(x: size.width / 2 + CGFloat(side) * size.width * 0.45, y: size.height * 0.08)
-                    let center = -side * (0.7 + 0.35 * sin(beat * .pi / 2 + (side > 0 ? 0 : .pi)))
-                    for index in 0..<(beams / 2 + 1) {
-                        let t = Double(index) / Double(beams / 2) - 0.5
-                        ConcertTheme.laser(in: light, from: origin, angle: center + t * 0.6, length: length, color: side > 0 ? primary : secondary, intensity: intensity, width: width)
-                    }
-                }
-            default:
-                // A flat sheet scanning up and down.
-                let tilt = .pi * 0.5 + sin(beat * .pi / 2) * 0.35
-                for index in 0..<beams {
-                    let t = Double(index) / Double(beams - 1) - 0.5
-                    ConcertTheme.laser(in: light, from: booth, angle: tilt + t * 0.05, length: length, color: primary, intensity: intensity * 0.7, width: width)
-                    ConcertTheme.laser(in: light, from: booth, angle: -tilt - t * 0.05, length: length, color: secondary, intensity: intensity * 0.7, width: width)
-                }
-            }
-        }
+        ConcertTheme.laserShow(
+            in: light, size: size, origin: booth, beat: beat, rotation: rotation, beatLength: audio.beatLength,
+            hype: hype, pulse: Double(audio.beatPulse), primary: primary, secondary: secondary, reduced: context.isReduced
+        )
 
         // DJ booth with the DJ, hands up on the drop.
         let deck = CGRect(x: booth.x - unit * 0.12, y: booth.y, width: unit * 0.24, height: unit * 0.08)

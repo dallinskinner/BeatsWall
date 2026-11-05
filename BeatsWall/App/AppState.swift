@@ -34,9 +34,11 @@ final class AppState {
     private static let lyricsKey = "showsLyrics"
     private static let concertKey = "isConcertMode"
     private static let concertStageKey = "concertStageID"
+    private static let concertShuffleKey = "concertShufflePool"
     private static let reactivityKey = "reactivity"
     private static let frameRateKey = "frameRate"
     private static let lightEffectsKey = "lightEffects"
+    private static let lightRigKey = "lightRig"
     private static let pausesWhenCoveredKey = "pausesWhenCovered"
     private static let pausesInLowPowerKey = "pausesInLowPower"
     private static let hidesDesktopIconsKey = "hidesDesktopIcons"
@@ -96,6 +98,14 @@ final class AppState {
         }
     }
 
+    /// Which collections Concert Mode's Shuffle switches between.
+    var concertShufflePool: ConcertShow.ShufflePool {
+        didSet {
+            UserDefaults.standard.set(concertShufflePool.rawValue, forKey: Self.concertShuffleKey)
+            concert.shufflePool = concertShufflePool
+        }
+    }
+
     /// How strongly wallpapers react: 1 is as analyzed, up to 2x for quiet setups.
     var reactivity: Double {
         didSet {
@@ -112,6 +122,11 @@ final class AppState {
     /// Fewer particles and lights, for Macs that are also streaming or recording.
     var lightEffects: Bool {
         didSet { UserDefaults.standard.set(lightEffects, forKey: Self.lightEffectsKey) }
+    }
+
+    /// Colors, lasers, strobe and movement for the Concert and Light Show collections.
+    var lightRig: LightRig {
+        didSet { lightRig.save(to: .standard, key: Self.lightRigKey) }
     }
 
     var pausesWhenCovered: Bool {
@@ -193,7 +208,8 @@ final class AppState {
         shufflePool = defaults.string(forKey: Self.shufflePoolKey).flatMap(ShufflePool.init(rawValue:)) ?? .collection
         showsLyrics = defaults.bool(forKey: Self.lyricsKey)
         isConcertMode = defaults.bool(forKey: Self.concertKey)
-        concertStageID = defaults.string(forKey: Self.concertStageKey).flatMap { ConcertShow.stages.contains($0) ? $0 : nil }
+        concertStageID = defaults.string(forKey: Self.concertStageKey).flatMap { ConcertShow.stages.contains($0) || $0 == ConcertShow.shuffleID ? $0 : nil }
+        concertShufflePool = defaults.string(forKey: Self.concertShuffleKey).flatMap(ConcertShow.ShufflePool.init(rawValue:)) ?? .both
         defaults.register(defaults: [
             Self.reactivityKey: 1.0,
             Self.frameRateKey: 60.0,
@@ -203,12 +219,14 @@ final class AppState {
         reactivity = defaults.double(forKey: Self.reactivityKey)
         frameRate = defaults.double(forKey: Self.frameRateKey)
         lightEffects = defaults.bool(forKey: Self.lightEffectsKey)
+        lightRig = LightRig.load(from: defaults, key: Self.lightRigKey)
         pausesWhenCovered = defaults.bool(forKey: Self.pausesWhenCoveredKey)
         pausesInLowPower = defaults.bool(forKey: Self.pausesInLowPowerKey)
         hidesDesktopIcons = defaults.bool(forKey: Self.hidesDesktopIconsKey)
         displayWallpaperIDs = (defaults.dictionary(forKey: Self.displayWallpapersKey) as? [String: String] ?? [:]).mapValues(WallpaperCatalog.currentID)
         liveAudio.gain = Float(reactivity)
         concert.chosenStageID = concertStageID
+        concert.shufflePool = concertShufflePool
     }
 
     var selectedWallpaper: Wallpaper {

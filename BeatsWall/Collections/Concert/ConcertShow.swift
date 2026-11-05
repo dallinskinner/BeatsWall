@@ -87,17 +87,54 @@ final class ConcertShow {
         case needsPermission(String)
     }
 
-    static let stages = ["concert.main-stage", "concert.headliner", "concert.lights-up", "concert.laser-rave"]
+    static let concertStages = ["concert.main-stage", "concert.headliner", "concert.lights-up", "concert.laser-rave"]
+    static let lightShowStages = ["lightshow.laser-show", "lightshow.spotlight-rig", "lightshow.light-tunnel", "lightshow.fog-room"]
+    static let stages = concertStages + lightShowStages
+    /// The `chosenStageID` that shuffles through `shufflePool`.
+    static let shuffleID = "shuffle"
+
+    /// Which stages Shuffle switches between.
+    enum ShufflePool: String, CaseIterable, Identifiable {
+        case concert, lightShow, both
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .concert: "Concert"
+            case .lightShow: "Light Show"
+            case .both: "Concert + Light Show"
+            }
+        }
+        var stages: [String] {
+            switch self {
+            case .concert: ConcertShow.concertStages
+            case .lightShow: ConcertShow.lightShowStages
+            case .both: ConcertShow.stages
+            }
+        }
+    }
 
     private(set) var status = Status.idle
     private(set) var track: NowPlaying?
     private(set) var look: SongLook?
     /// The stage picked to suit the song.
     private(set) var suggestedStageID = "concert.main-stage"
-    /// A stage the user chose to always use, or nil to let the song decide.
-    var chosenStageID: String?
+    /// A stage the user chose to always use, `shuffleID` to shuffle, or nil to let the song decide.
+    var chosenStageID: String? {
+        didSet { if isShuffling { shuffle() } }
+    }
+    var shufflePool = ShufflePool.both {
+        didSet { if isShuffling { shuffle() } }
+    }
+    /// The stage Shuffle is on.
+    private(set) var shuffledStageID: String?
 
-    var stageID: String { chosenStageID ?? suggestedStageID }
+    var isShuffling: Bool { chosenStageID == Self.shuffleID }
+
+    var stageID: String {
+        if isShuffling { return shuffledStageID ?? suggestedStageID }
+        return chosenStageID ?? suggestedStageID
+    }
 
     @ObservationIgnored private let reader = NowPlayingReader()
     @ObservationIgnored private var pollTimer: Timer?
@@ -107,6 +144,8 @@ final class ConcertShow {
     @ObservationIgnored private var artworkColors: [String: [Color]] = [:]
     @ObservationIgnored private var listening = Listening()
     @ObservationIgnored private var quietFor = 0.0
+    @ObservationIgnored private var beatTimer: Timer?
+    @ObservationIgnored private var shuffleBeats = BeatEdge()
 
     /// What the music has sounded like since the song started.
     private struct Listening {
@@ -152,11 +191,19 @@ final class ConcertShow {
             sampleTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.sample() }
             }
+            // Watches for downbeats ~30 times a second, for Shuffle.
+            shuffleBeats = BeatEdge()
+            beatTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkShuffleBeat() }
+            }
+            if isShuffling { shuffle() }
         } else {
             pollTimer?.invalidate()
             sampleTimer?.invalidate()
+            beatTimer?.invalidate()
             pollTimer = nil
             sampleTimer = nil
+            beatTimer = nil
             status = .idle
             track = nil
             look = nil
@@ -207,8 +254,9 @@ final class ConcertShow {
             title: info.title, artist: info.artist,
             colors: artworkColors[key] ?? ArtworkPalette.colors(seed: key), startedAt: Date()
         )
-        listening = Listening(genreStage: Self.stage(forGenre: info.genre))
+        listening = Listening(genreStage: Self.stage(forGenre: info.genre, song: key))
         if let stage = listening.genreStage { suggestedStageID = stage }
+        if isShuffling { shuffle() }
         guard artworkColors[key] == nil else { return }
         Task {
             let data = await reader.artwork(from: info.player)
@@ -219,14 +267,38 @@ final class ConcertShow {
         }
     }
 
+    // MARK: - Shuffle
+
+    /// A new stage on every eighth bar's downbeat. New songs also get a new stage.
+    private func checkShuffleBeat() {
+        guard isShuffling, let audio = readAudio?() else { return }
+        guard shuffleBeats.isNewBeat(audio), audio.beatCount > 0, audio.beatCount % 32 == 0 else { return }
+        shuffle()
+    }
+
+    private func shuffle() {
+        let pool = shufflePool.stages.filter { $0 != shuffledStageID }
+        shuffledStageID = pool.randomElement() ?? shufflePool.stages.first
+    }
+
     // MARK: - Picking the stage
 
-    static func stage(forGenre genre: String) -> String? {
+    /// One of `options`, the same one every time for a song, so it doesn't flip mid-song.
+    private static func pick(_ options: [String], for song: String) -> String {
+        var hash: UInt64 = 5381
+        for byte in song.utf8 { hash = hash &* 33 &+ UInt64(byte) }
+        return options[Int(hash % UInt64(options.count))]
+    }
+
+    static func stage(forGenre genre: String, song: String) -> String? {
         let genre = genre.lowercased()
         guard !genre.isEmpty else { return nil }
         if ["rock", "metal", "punk", "alternative", "grunge"].contains(where: { genre.contains($0) }) { return "concert.headliner" }
-        if ["electronic", "dance", "house", "techno", "edm", "trance", "dubstep", "drum"].contains(where: { genre.contains($0) }) { return "concert.laser-rave" }
-        if ["ballad", "acoustic", "singer", "classical", "ambient", "soundtrack"].contains(where: { genre.contains($0) }) { return "concert.lights-up" }
+        if ["electronic", "dance", "house", "techno", "edm", "trance", "dubstep", "drum"].contains(where: { genre.contains($0) }) {
+            return pick(["concert.laser-rave", "lightshow.laser-show"], for: song)
+        }
+        if ["ambient", "instrumental", "new age"].contains(where: { genre.contains($0) }) { return "lightshow.fog-room" }
+        if ["ballad", "acoustic", "singer", "classical", "soundtrack"].contains(where: { genre.contains($0) }) { return "concert.lights-up" }
         return nil
     }
 
@@ -264,7 +336,7 @@ final class ConcertShow {
         let bass = listening.bass / heard
         let highs = listening.highs / heard
         if bpm > 0, bpm < 95, level < 0.45 { return "concert.lights-up" }
-        if bpm >= 124, bass > 0.45 { return "concert.laser-rave" }
+        if bpm >= 124, bass > 0.45 { return Self.pick(["concert.laser-rave", "lightshow.laser-show"], for: track?.trackKey ?? "\(Int(listening.bpm))") }
         if bass < 0.35, highs > bass * 1.3 { return "concert.headliner" }
         return "concert.main-stage"
     }

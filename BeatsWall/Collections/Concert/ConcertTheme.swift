@@ -20,6 +20,14 @@ enum ConcertTheme {
     static let rig: [Color] = [magenta, ice, violet, amber, laserGreen]
     static let confetti: [Color] = [magenta, ice, amber, .white, violet]
 
+    /// The lighting rig of the wallpaper being drawn. Concert and Light Show wallpapers call
+    /// `use(_:)` at the top of every draw, so beams, lasers, haze and strobes follow it.
+    private(set) static var lighting = LightRig()
+
+    static func use(_ context: WallpaperContext) {
+        lighting = context.rig
+    }
+
     static func grain() -> Shader {
         ShaderLibrary.grain(.float(0.03))
     }
@@ -29,10 +37,33 @@ enum ConcertTheme {
         palette[((bar + offset) % palette.count + palette.count) % palette.count]
     }
 
-    /// The rig's colors: the playing song's album art in Concert Mode, else the user's stage
-    /// image, else the house lights.
+    /// The rig's colors: ones picked on the lighting desk, else the playing song's album art in
+    /// Concert Mode, else the user's stage image, else the house lights.
     static func palette(_ context: WallpaperContext) -> [Color] {
-        context.look?.colors ?? StageImage.shared.colors ?? rig
+        context.rig.palette ?? context.look?.colors ?? StageImage.shared.colors ?? rig
+    }
+
+    /// How far fixture `index` of `count` turns from its resting angle right now, in radians
+    /// (about ±0.45), following the rig's movement and speed.
+    static func motion(index: Int, count: Int, beat: Double) -> Double {
+        let beat = beat * lighting.speed
+        switch lighting.movement {
+        case .sweep:
+            // Neighbors swing in opposite directions, a full sweep every four beats.
+            return sin(beat * .pi / 2 + (index.isMultiple(of: 2) ? 0 : .pi)) * 0.45
+        case .chase:
+            // A wave rolling across the rig, one fixture after the next.
+            return sin((beat / 2 - Double(index) / Double(max(count, 1))) * 2 * .pi) * 0.45
+        case .pulse:
+            // Snap to a new aim on every beat.
+            let step = beat.rounded(.down)
+            let settle = smoothstep(0, 0.15, beat - step)
+            let from = hash01(index, Int(step) - 1) - 0.5
+            let to = hash01(index, Int(step)) - 0.5
+            return settle.lerp(from, to) * 0.9
+        case .still:
+            return 0
+        }
     }
 
     /// Seconds since the current song started, or nil without one.
@@ -120,6 +151,8 @@ enum ConcertTheme {
 
     /// A band of fog that lights up wherever beams cross it.
     static func haze(in graphics: GraphicsContext, rect: CGRect, color: Color, opacity: Double) {
+        let opacity = opacity * lighting.fog * 2
+        guard opacity > 0.002 else { return }
         graphics.fill(Path(rect), with: .linearGradient(
             Gradient(colors: [color.opacity(0), color.opacity(opacity), color.opacity(opacity * 0.6), color.opacity(0)]),
             startPoint: CGPoint(x: rect.midX, y: rect.minY), endPoint: CGPoint(x: rect.midX, y: rect.maxY)
@@ -129,6 +162,7 @@ enum ConcertTheme {
     /// A spotlight cone through haze. `angle` 0 points straight down, positive swings right,
     /// and π points straight up. Draw into a `.plusLighter` context.
     static func beam(in graphics: GraphicsContext, from origin: CGPoint, angle: Double, length: CGFloat, spread: Double, color: Color, intensity: Double) {
+        let intensity = min(intensity * lighting.intensity, 1.6)
         guard intensity > 0.01 else { return }
         func edge(_ offset: Double, _ scale: Double) -> CGPoint {
             origin + CGPoint(x: sin(angle + offset) * length * scale, y: cos(angle + offset) * length * scale)
@@ -153,6 +187,7 @@ enum ConcertTheme {
 
     /// A thin laser line with a soft glow. Same angle convention as `beam`.
     static func laser(in graphics: GraphicsContext, from origin: CGPoint, angle: Double, length: CGFloat, color: Color, intensity: Double, width: CGFloat) {
+        let intensity = min(intensity * lighting.intensity, 1.6)
         guard intensity > 0.01 else { return }
         var line = Path()
         line.addLines([origin, origin + CGPoint(x: sin(angle) * length, y: cos(angle) * length)])
@@ -163,8 +198,85 @@ enum ConcertTheme {
 
     /// A white flash over everything.
     static func strobe(in graphics: GraphicsContext, size: CGSize, amount: Double) {
+        let amount = amount * lighting.strobe.amount
         guard amount > 0.01 else { return }
         graphics.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white.opacity(min(amount, 1) * 0.4)))
+    }
+
+    /// A laser show from `origin`: the rig's pattern, or on Automatic a new look every bar and a
+    /// spinning tunnel after drops. `rotation` is a phase that runs faster with energy.
+    static func laserShow(
+        in light: GraphicsContext, size: CGSize, origin: CGPoint, beat: Double, rotation: Double, beatLength: Double,
+        hype: HypeMeter, pulse: Double, primary: Color, secondary: Color, reduced: Bool
+    ) {
+        let unit = min(size.width, size.height)
+        let length = hypot(size.width, size.height)
+        let width = max(1, unit * 0.0022)
+        let energy = hype.energy
+        let intensity = 0.35 + 0.5 * energy + 0.3 * pulse
+        let bar = Int(beat / 4)
+        var pattern = lighting.pattern
+        if pattern == .auto {
+            pattern = hype.secondsSinceDrop < beatLength * 16 ? .tunnel : [.fan, .crossfire, .sheet][bar % 3]
+        }
+        let beams = 9 + Int(8 * energy)
+        switch pattern {
+        case .tunnel:
+            let count = reduced ? 24 : 48
+            for index in 0..<count {
+                let angle = Double(index) / Double(count) * 2 * .pi + rotation
+                laser(in: light, from: origin, angle: angle, length: length, color: index.isMultiple(of: 2) ? primary : secondary, intensity: intensity, width: width)
+            }
+            var rings = light
+            rings.opacity = 0.5
+            for ring in 0..<4 {
+                let phase = (Double(ring) + beat.truncatingRemainder(dividingBy: 1)) / 4
+                rings.stroke(disc(origin, length * 0.5 * CGFloat(phase * phase)), with: .color(secondary.opacity(1 - phase)), lineWidth: width * 2)
+            }
+        case .fan:
+            // A fan sweeping across the ceiling. It narrows while the song builds.
+            let center = .pi + motion(index: 0, count: 1, beat: beat) * 1.3
+            let spread = 1.4 * (1 - 0.6 * hype.build)
+            for index in 0..<beams {
+                let t = Double(index) / Double(beams - 1) - 0.5
+                laser(in: light, from: origin, angle: center + t * spread, length: length, color: primary, intensity: intensity, width: width)
+            }
+        case .crossfire:
+            // Two emitters high on each side, crossing over the crowd.
+            for (index, side) in [-1.0, 1.0].enumerated() {
+                let emitter = CGPoint(x: size.width / 2 + CGFloat(side) * size.width * 0.45, y: size.height * 0.08)
+                let center = -side * (0.7 + 0.8 * motion(index: index, count: 2, beat: beat))
+                for beamIndex in 0..<(beams / 2 + 1) {
+                    let t = Double(beamIndex) / Double(beams / 2) - 0.5
+                    laser(in: light, from: emitter, angle: center + t * 0.6, length: length, color: side > 0 ? primary : secondary, intensity: intensity, width: width)
+                }
+            }
+        case .sheet:
+            // A flat sheet scanning up and down, kept just above the emitter's horizon so a
+            // floor-level emitter still shows it.
+            let tilt = .pi * 0.5 + 0.22 + motion(index: 0, count: 1, beat: beat) * 0.45
+            for index in 0..<beams {
+                let t = Double(index) / Double(beams - 1) - 0.5
+                laser(in: light, from: origin, angle: tilt + t * 0.05, length: length, color: primary, intensity: intensity * 0.7, width: width)
+                laser(in: light, from: origin, angle: -tilt - t * 0.05, length: length, color: secondary, intensity: intensity * 0.7, width: width)
+            }
+        case .cone:
+            // A ring of beams turning above the emitter, opening wide with the bass.
+            let count = reduced ? 12 : 20
+            let top = CGPoint(x: origin.x, y: origin.y - size.height * 0.45)
+            let radius = unit * CGFloat(0.15 + 0.35 * energy + 0.15 * pulse)
+            for index in 0..<count {
+                let angle = Double(index) / Double(count) * 2 * .pi + rotation
+                let target = top + CGPoint(x: cos(angle) * radius * 1.6, y: sin(angle) * radius * 0.45)
+                let delta = target - origin
+                let color = index.isMultiple(of: 2) ? primary : secondary
+                let front = sin(angle) > 0
+                laser(in: light, from: origin, angle: atan2(delta.x, delta.y), length: delta.length * 1.6, color: color, intensity: intensity * (front ? 1 : 0.55), width: width)
+            }
+            light.stroke(Path(ellipseIn: CGRect(x: top.x - radius * 1.6, y: top.y - radius * 0.45, width: radius * 3.2, height: radius * 0.9)), with: .color(primary.opacity(0.25 * intensity)), lineWidth: width * 2)
+        case .auto:
+            break
+        }
     }
 
     /// One row of the crowd in silhouette: heads, shoulders and raised hands that wave in

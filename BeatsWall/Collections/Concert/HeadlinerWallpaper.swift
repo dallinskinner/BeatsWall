@@ -21,6 +21,7 @@ struct HeadlinerWallpaper: View {
 
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
+        ConcertTheme.use(context)
         hype.update(time: frame.time, audio: audio)
         hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
@@ -73,7 +74,7 @@ struct HeadlinerWallpaper: View {
         ConcertTheme.beam(in: light, from: CGPoint(x: center + unit * 0.3, y: -unit * 0.05), angle: atan2(singerX - (center + unit * 0.3), floorY), length: floorY * 1.15, spread: 0.07, color: .white, intensity: 0.35 + 0.3 * energy)
         for side in [-1.0, 1.0] {
             let origin = CGPoint(x: center + CGFloat(side) * size.width * 0.45, y: size.height * 0.05)
-            let angle = -side * (0.5 + 0.25 * sin(beat * .pi / 2))
+            let angle = -side * (0.5 + 0.55 * ConcertTheme.motion(index: side > 0 ? 1 : 0, count: 2, beat: beat))
             ConcertTheme.beam(in: light, from: origin, angle: angle, length: size.height, spread: 0.08, color: warm, intensity: 0.2 + 0.5 * Double(audio.mid))
         }
 

@@ -20,6 +20,7 @@ struct LightsUpWallpaper: View {
 
     private func draw(in graphics: inout GraphicsContext, size: CGSize, frame: AudioFrame) {
         let audio = frame.audio
+        ConcertTheme.use(context)
         hype.update(time: frame.time, audio: audio)
         hype.cue(context.look?.startedAt)
         let unit = min(size.width, size.height)
@@ -112,7 +113,7 @@ struct LightsUpWallpaper: View {
         for index in 0..<5 {
             let t = Double(index) / 4
             let origin = CGPoint(x: center + unit * CGFloat(0.4 * (t - 0.5)), y: fieldY - unit * 0.06)
-            ConcertTheme.beam(in: light, from: origin, angle: .pi + (t - 0.5) * 0.8 + sin(beat * .pi / 2) * 0.2, length: unit * 0.5, spread: 0.03, color: screenColor, intensity: 0.2 + 0.6 * energy)
+            ConcertTheme.beam(in: light, from: origin, angle: .pi + (t - 0.5) * 0.8 + ConcertTheme.motion(index: index, count: 5, beat: beat) * 0.45, length: unit * 0.5, spread: 0.03, color: screenColor, intensity: 0.2 + 0.6 * energy)
         }
         ConcertTheme.glow(in: light, at: CGPoint(x: center, y: fieldY - unit * 0.1), radius: unit * 0.5, color: screenColor, opacity: 0.12 + 0.2 * energy)
 
