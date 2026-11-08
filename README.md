@@ -46,7 +46,7 @@ BeatsWall listens to your Mac's sound output, so it works with Spotify, Apple Mu
 - **Remix Maker:** search Apple Music or add songs from your library. BeatsWall mixes them into an intro, each song's best part tempo-matched and crossfaded on the beat, and an outro, then plays it as a live show on your desktop.
 - **Synced lyrics:** karaoke-style lyrics on your wallpaper for songs playing in Apple Music or Spotify.
 - **Shuffle:** a new wallpaper on every bar.
-- **Record Clip:** turn any wallpaper and song into a vertical, square or landscape video for TikTok, Reels or Shorts, credited to your @handle.
+- **Record Clip:** turn any wallpaper and song into a vertical, square or landscape video for TikTok, Reels or Shorts, credited to your own handle.
 - **Show Mode:** the wallpaper full screen on a TV or second monitor, for filming your setup.
 - **Easy on your Mac:**
   - pauses when windows cover the desktop or in Low Power Mode
