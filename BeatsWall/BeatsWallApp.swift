@@ -24,6 +24,12 @@ struct BeatsWallApp: App {
         }
         .windowResizability(.contentSize)
 
+        Window("Remix Maker", id: "remix") {
+            RemixMakerView()
+                .environment(appDelegate.appState)
+        }
+        .windowResizability(.contentSize)
+
         Window("Send Feedback", id: "feedback") {
             FeedbackView()
                 .environment(appDelegate.appState)

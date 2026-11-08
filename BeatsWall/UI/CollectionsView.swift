@@ -71,6 +71,12 @@ struct CollectionsView: View {
                     Label("Record Clip", systemImage: "record.circle")
                 }
                 .help("Make a video of a wallpaper dancing to a song")
+                Button {
+                    openWindow(id: "remix")
+                } label: {
+                    Label("Remix Maker", systemImage: "slider.vertical.3")
+                }
+                .help("Mix songs into a remix that plays as a live show")
                 Toggle(isOn: $appState.isShuffling) {
                     Label("Shuffle", systemImage: "shuffle")
                 }

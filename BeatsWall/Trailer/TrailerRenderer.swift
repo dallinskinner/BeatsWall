@@ -55,6 +55,74 @@ enum TrailerRenderer {
             }
             return true
         }
+        if let flag = arguments.firstIndex(of: "-renderRemix"), arguments.count > flag + 2 {
+            // -renderRemix <remix folder> <out.mp4>: the live show of a saved remix, as video.
+            let folder = URL(fileURLWithPath: arguments[flag + 1])
+            let output = URL(fileURLWithPath: arguments[flag + 2])
+            Task { @MainActor in
+                do {
+                    let decoder = JSONDecoder()
+                    decoder.dateDecodingStrategy = .iso8601
+                    let plan = try decoder.decode(RemixPlan.self, from: Data(contentsOf: folder.appendingPathComponent("remix.json")))
+                    let audio = folder.appendingPathComponent("remix.m4a")
+                    let analysis = try OfflineAnalysis.analyze(url: audio, fps: fps)
+                    let source = OfflineAudioSource(frames: analysis.frames)
+                    let model = ClipModel(wallpaperID: plan.sections[0].stageID, length: plan.duration, source: source, lyrics: nil, songStart: 0, showsWatermark: false)
+                    let job = VideoWriter.Job(size: size, fps: fps, frameCount: Int(plan.duration * fps), output: output, audio: audio, audioStart: 0)
+                    model.shotIndex = -1
+                    try await VideoWriter.write(job, view: ClipView(model: model)) { frame in
+                        let time = Double(frame) / fps
+                        model.time = time
+                        source.frameIndex = frame
+                        let index = plan.sections.lastIndex { $0.start <= time + 0.001 } ?? 0
+                        guard index != model.shotIndex else { return }
+                        let section = plan.sections[index]
+                        model.shotIndex = index
+                        model.wallpaperID = section.stageID
+                        model.look = SongLook(title: section.title, artist: section.artist, colors: section.colors.map { Color(hex: $0) }, startedAt: Date(timeIntervalSinceReferenceDate: section.start))
+                    } progress: { _ in }
+                    print("REMIX: wrote \(output.path)")
+                } catch {
+                    print("REMIX: failed: \(error)")
+                }
+                NSApp.terminate(nil)
+            }
+            return true
+        }
+        if let flag = arguments.firstIndex(of: "-buildRemix"), arguments.count > flag + 2 {
+            // -buildRemix <out folder> <audio file or "search:term">…
+            let folder = URL(fileURLWithPath: arguments[flag + 1])
+            let items = Array(arguments.dropFirst(flag + 2)).filter { !$0.hasPrefix("-") }
+            Task { @MainActor in
+                do {
+                    var tracks: [RemixTrack] = []
+                    for item in items {
+                        if item.hasPrefix("search:") {
+                            guard let song = try await SongSearch.search(String(item.dropFirst(7))).first else { continue }
+                            print("REMIX: found \(song.trackName) — \(song.artistName) (\(song.primaryGenreName ?? "?"))")
+                            tracks.append(RemixTrack(song: song))
+                        } else {
+                            let url = URL(fileURLWithPath: item)
+                            let info = await ClipExporter.songInfo(for: url)
+                            tracks.append(RemixTrack(file: url, title: info.title, artist: info.artist ?? ""))
+                        }
+                    }
+                    let inputs = try await RemixLibrary.prepare(tracks)
+                    let name = folder.lastPathComponent
+                    let plan = try await Task.detached {
+                        try RemixEngine.build(inputs, name: name, folder: folder) { stage, _ in print("REMIX: \(stage)") }
+                    }.value
+                    print(String(format: "REMIX: %.1f BPM, %.1fs", plan.bpm, plan.duration))
+                    for section in plan.sections {
+                        print(String(format: "REMIX:   %6.2f–%6.2f  %@  %@  %@", section.start, section.end, section.kind.rawValue, section.title, section.stageID))
+                    }
+                } catch {
+                    print("REMIX: failed: \(error)")
+                }
+                NSApp.terminate(nil)
+            }
+            return true
+        }
         guard let flag = arguments.firstIndex(of: "-renderTrailer"), arguments.count > flag + 2 else { return false }
         let audio = URL(fileURLWithPath: arguments[flag + 1])
         let output = URL(fileURLWithPath: arguments[flag + 2])

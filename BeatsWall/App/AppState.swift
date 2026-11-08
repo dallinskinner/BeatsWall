@@ -89,6 +89,8 @@ final class AppState {
 
     let concert = ConcertShow()
     let updates = UpdateChecker()
+    /// A remix playing as a live show takes over the desktop while it plays.
+    let remix = RemixPlayer()
 
     /// The Concert stage to always use, or nil to pick one that suits each song.
     var concertStageID: String? {
@@ -227,6 +229,7 @@ final class AppState {
         liveAudio.gain = Float(reactivity)
         concert.chosenStageID = concertStageID
         concert.shufflePool = concertShufflePool
+        remix.onChange = { [weak self] in self?.updateRunning() }
     }
 
     var selectedWallpaper: Wallpaper {
@@ -235,6 +238,7 @@ final class AppState {
 
     /// What's on the desktop right now: Concert Mode's stage, the shuffle pick, or the selection.
     var displayedWallpaper: Wallpaper {
+        if remix.isActive, let stage = remix.wallpaperID.flatMap(WallpaperCatalog.wallpaper(id:)) { return stage }
         if isConcertMode, let stage = WallpaperCatalog.wallpaper(id: concert.stageID) { return stage }
         return shuffledWallpaperID.flatMap { WallpaperCatalog.wallpaper(id: $0) } ?? selectedWallpaper
     }
@@ -261,6 +265,7 @@ final class AppState {
 
     /// Live audio when we can capture it, otherwise a demo beat so the desktop still moves.
     var desktopSource: any AudioFeatureSource {
+        if remix.isActive, let source = remix.source { return source }
         if case .failed = audioStatus { return SimulatedAudioSource.shared }
         return liveAudio
     }
@@ -277,6 +282,7 @@ final class AppState {
     }
 
     func shutdown() {
+        remix.stop()
         stopAudio()
         lyrics.setActive(false)
         concert.setActive(false, lyrics: lyrics) { AudioFeatures() }
@@ -292,7 +298,7 @@ final class AppState {
 
     private func updateConcert() {
         guard isStarted else { return }
-        concert.setActive(isConcertMode && isLive, lyrics: lyrics) { [weak self] in
+        concert.setActive(isConcertMode && isLive && !remix.isActive, lyrics: lyrics) { [weak self] in
             self?.desktopSource.read() ?? AudioFeatures()
         }
     }
@@ -306,7 +312,7 @@ final class AppState {
 
     /// Watches for beats ~30 times a second while shuffling and switches on each bar's downbeat.
     private func updateShuffle() {
-        let shouldRun = isStarted && isShuffling && !isConcertMode && isLive
+        let shouldRun = isStarted && isShuffling && !isConcertMode && !remix.isActive && isLive
         if shouldRun, shuffleTimer == nil {
             shuffleBeat = BeatEdge()
             shuffleTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
@@ -336,7 +342,8 @@ final class AppState {
 
     private func updateAudio() {
         guard isStarted else { return }
-        if isLive { startAudio() } else { stopAudio() }
+        // A remix brings its own analysis, so system audio isn't needed while it plays.
+        if isLive, !remix.isActive { startAudio() } else { stopAudio() }
     }
 
     private func startAudio() {

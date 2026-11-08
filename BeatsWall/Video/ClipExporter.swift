@@ -68,7 +68,7 @@ final class ClipModel {
     let songStart: Double
     let showsWatermark: Bool
     let handle: String
-    let look: SongLook?
+    var look: SongLook?
     let rig: LightRig
 
     init(

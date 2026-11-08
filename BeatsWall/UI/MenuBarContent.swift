@@ -85,6 +85,15 @@ struct MenuBarContent: View {
                 }
             }
         }
+        if appState.remix.remix != nil {
+            Text("🎛 \(appState.remix.summary)")
+            Button(appState.remix.isPaused ? "Resume Remix" : "Pause Remix") { appState.remix.togglePause() }
+                .disabled(appState.remix.isPreparing)
+            Button("Stop Remix") { appState.remix.stop() }
+            Divider()
+        }
+        Button("Remix Maker…") { open("remix") }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
         Button("Record Clip…") { open("clip") }
             .keyboardShortcut("r")
         Button("Browse Collections…") { open("collections") }
