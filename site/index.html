@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BeatsWall — Live wallpapers that dance to your music</title>
+<meta name="description" content="Live wallpapers for your Mac that dance to whatever's playing. 17 collections, 57 live wallpapers. macOS 15 or later. Private beta.">
+<link rel="icon" href="images/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="wall" aria-hidden="true"></canvas>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header class="nav">
+  <a class="brand" href="#top"><img src="images/icon.png" alt="" width="28" height="28"> BeatsWall</a>
+  <nav>
+    <a href="#desktop">Wallpapers</a>
+    <a href="#collections">Collections</a>
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a class="btn small" href="https://github.com/dallinskinner/BeatsWall/releases/latest">Get the beta</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="hero-inner" id="heroInner">
+      <p class="eyebrow">Private beta · macOS 15 or later</p>
+      <h1>Your desktop,<br>on the beat.</h1>
+      <p class="lede">Live wallpapers for your Mac that dance to whatever’s playing. Spotify, Apple Music, YouTube — anything.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/dallinskinner/BeatsWall/releases/latest">Download the beta</a>
+        <a class="btn ghost" href="#desktop">See it move</a>
+      </div>
+      <p class="scene-name" id="sceneName">Synthwave</p>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">Scroll <span></span></div>
+  </section>
+
+  <section class="pin" id="desktop" data-steps="4">
+    <div class="sticky">
+      <div class="mac" id="mac">
+        <div class="menubar"><span class="b">B</span><span>BeatsWall</span><span class="dim">Now playing ▸</span></div>
+        <div class="screens">
+          <img class="shot on" src="images/main-stage.jpg" alt="Concert: Main Stage wallpaper">
+          <img class="shot" src="images/outrun-grid.jpg" alt="Synthwave: Outrun Grid wallpaper">
+          <img class="shot" src="images/beat-b.jpg" alt="BeatsWall: Beat B wallpaper">
+          <img class="shot" src="images/woofie.jpg" alt="BeatsWall: Woofie wallpaper">
+        </div>
+      </div>
+      <div class="caption">
+        <p class="eyebrow">Scroll to change the wallpaper</p>
+        <h2 id="capTitle">Concert: Main Stage</h2>
+        <p id="capText">A full concert stage on your desktop, lit by the song you’re playing.</p>
+        <div class="dots" id="dots"><i class="on"></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band reveal">
+    <h2>It listens. It never records.</h2>
+    <p>BeatsWall hears your Mac’s sound output, so the wallpaper reacts to the beat, the bass and the melody. Audio is analyzed on your Mac as it plays. It’s never recorded, saved or sent anywhere.</p>
+  </section>
+
+  <section class="hpin" id="collections" data-count="17">
+    <div class="sticky">
+      <div class="hhead">
+        <p class="eyebrow">17 collections · 57 live wallpapers</p>
+        <h2>Keep scrolling. There’s a lot of them.</h2>
+      </div>
+      <div class="track" id="track"></div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <h2 class="reveal">Built for the show</h2>
+    <div class="grid">
+      <article class="card reveal"><h3>Concert Mode</h3><p>A concert stage for the song playing in Apple Music or Spotify, lit in its album art’s colors with its name on the screens. It picks the stage, or you shuffle or choose.</p></article>
+      <article class="card reveal"><h3>Lighting desk</h3><p>Colors, laser patterns, strobe, fog, intensity and movement for the Concert and Light Show stages.</p></article>
+      <article class="card reveal"><h3>Remix Maker</h3><p>Search Apple Music or add songs from your library. BeatsWall mixes an intro, each song’s best part tempo-matched and crossfaded on the beat, and an outro, then plays it as a live show.</p></article>
+      <article class="card reveal"><h3>Synced lyrics</h3><p>Karaoke-style lyrics on your wallpaper for songs playing in Apple Music or Spotify.</p></article>
+      <article class="card reveal"><h3>Shuffle</h3><p>A new wallpaper on every bar.</p></article>
+      <article class="card reveal"><h3>Record Clip</h3><p>Turn any wallpaper and song into a vertical, square or landscape video for TikTok, Reels or Shorts, credited to your own handle.</p></article>
+      <article class="card reveal"><h3>Show Mode</h3><p>The wallpaper full screen on a TV or second monitor, for filming your setup.</p></article>
+      <article class="card reveal"><h3>Stage image</h3><p>Put your own picture on the screens of every concert stage.</p></article>
+      <article class="card reveal"><h3>Easy on your Mac</h3><p>Pauses when windows cover the desktop or in Low Power Mode. A lighter-effects mode for streaming. A separate wallpaper for each display.</p></article>
+    </div>
+  </section>
+
+  <section class="install" id="install">
+    <h2 class="reveal">Get the beta in five steps</h2>
+    <div class="steps" id="steps">
+      <div class="line"><div class="fill" id="lineFill"></div></div>
+      <ol>
+        <li class="reveal"><b>Download</b> the latest <code>BeatsWall-….dmg</code> from <a href="https://github.com/dallinskinner/BeatsWall/releases/latest">Releases</a>.</li>
+        <li class="reveal"><b>Open it</b> and drag BeatsWall onto Applications.</li>
+        <li class="reveal"><b>Open BeatsWall.</b> macOS will say it can’t check it for malware, because the beta isn’t notarized yet. Click Done.</li>
+        <li class="reveal"><b>Allow it once:</b> System Settings › Privacy &amp; Security, scroll down, click Open Anyway next to BeatsWall.</li>
+        <li class="reveal"><b>Allow audio capture</b> when asked, so BeatsWall can find the beat. Then click the <b>B</b> in your menu bar.</li>
+      </ol>
+    </div>
+    <p class="fine reveal">Beta builds expire after about 60 days. The app tells you when a newer build is out.</p>
+  </section>
+
+  <section class="final reveal">
+    <h2>Put your desktop on the beat.</h2>
+    <a class="btn big" href="https://github.com/dallinskinner/BeatsWall/releases/latest">Download the beta</a>
+    <p class="fine">BeatsWall doesn’t record or redistribute music. Remixes and clips are made from songs you supply, or from Apple Music’s 30-second previews, for your own listening. If you post a clip, make sure you have the rights to the music in it.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>© BeatsWall</span>
+  <a href="https://github.com/dallinskinner/BeatsWall">GitHub</a>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
