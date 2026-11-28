@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wallpaper gallery (dev)</title>
+<link rel="stylesheet" href="../shared/ui.css">
+<style>
+body{padding:20px}
+h1{margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px}
+figure canvas{width:100%;height:auto;border-radius:12px;display:block;background:#000}
+figcaption{padding:6px 2px;font-size:.9rem}figcaption small{color:var(--dim)}
+.err{color:#ff8a8a}
+</style>
+</head>
+<body>
+<h1>Wallpaper gallery</h1>
+<p class="hint">Every wallpaper in the catalog, animated. Use this to check each one renders. <span id="count"></span></p>
+<div class="grid" id="grid"></div>
+<script type="module">
+import { allWallpapers } from '../shared/wallpapers/index.js';
+import { readAudio } from '../shared/audio.js';
+const grid = document.getElementById('grid'), items = [];
+for (const w of allWallpapers()) {
+  const fig = document.createElement('figure'), cv = document.createElement('canvas'), cap = document.createElement('figcaption');
+  cv.width = 480; cv.height = 300;
+  cap.textContent = w.name + ' '; const sm = document.createElement('small'); sm.textContent = w.collection.name; cap.append(sm);
+  fig.append(cv, cap); grid.append(fig);
+  const item = { ctx: cv.getContext('2d'), inst: w.make(), cap, bad: false, visible: !('IntersectionObserver' in window) };
+  items.push(item);
+  if (!item.visible) new IntersectionObserver(([e]) => { item.visible = e.isIntersecting; }).observe(cv);
+}
+document.getElementById('count').textContent = items.length + ' wallpapers.';
+function loop(now) {
+  const t = now / 1000, audio = readAudio(t);
+  for (const it of items) {
+    if (it.bad || !it.visible) continue; // only animate what is on screen
+    try { it.inst.draw(it.ctx, 480, 300, { time: t, audio }); }
+    catch (e) { it.bad = true; it.cap.classList.add('err'); it.cap.textContent += ' FAILED: ' + e.message; console.error(e); }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
