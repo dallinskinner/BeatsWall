@@ -17,5 +17,7 @@ window.KARAOKE_CONFIG = {
   //   databaseURL: "https://your-project-default-rtdb.firebaseio.com",
   //   projectId: "your-project", appId: "..."
   // },
-  youtubeKey: '', // YouTube Data API v3 key. Empty = no search box, paste-a-link only.
+  // YouTube Data API v3 key. Empty = no search box, paste-a-link only.
+  // This is visible to visitors, so keep it restricted in Google Cloud (see README.md).
+  youtubeKey: 'AIzaSyDHLlm9w2OcOWfFJ3-9BmN3co33hgKLYFc',
 };
