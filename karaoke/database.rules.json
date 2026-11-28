@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        ".read": "auth != null",
+        "host": { ".write": "auth != null && !data.exists()", ".validate": "newData.val() === auth.uid" },
+        "createdAt": { ".write": "auth != null && !data.exists()" },
+        "queue": {
+          "$id": {
+            ".write": "auth != null && (root.child('rooms/' + $room + '/host').val() === auth.uid || (!data.exists() && newData.child('owner').val() === auth.uid && newData.child('status').val() === 'queued') || (data.exists() && !newData.exists() && data.child('owner').val() === auth.uid))",
+            ".validate": "newData.hasChildren(['name', 'song', 'pick', 'ts', 'status', 'owner'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24" },
+            "status": { ".validate": "newData.val() === 'queued' || newData.val() === 'playing' || newData.val() === 'done'" }
+          }
+        }
+      }
+    }
+  }
+}
