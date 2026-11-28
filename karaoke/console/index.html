@@ -16,12 +16,30 @@ html,body{height:100%;overflow:hidden}
 .join small{display:block;color:var(--dim);max-width:240px;word-break:break-all}
 .queue{position:absolute;top:20px;right:20px;width:min(340px,30vw);max-height:46vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;backdrop-filter:blur(10px)}
 .queue h3{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--yellow);margin-bottom:8px}
-.queue ol{list-style:none;padding:0;display:grid;gap:8px}
+.queue ol{list-style:none;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
 .queue li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06)}
 .queue li.playing{background:rgba(255,46,151,.3)}
 .queue li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .queue li small{display:block;color:var(--dim);overflow:hidden;text-overflow:ellipsis}
-.queue li button{background:none;border:0;color:var(--dim);cursor:pointer;font-size:1.1rem}
+.queue li span{flex:1}
+.tools{display:flex;gap:2px}
+.queue li button{background:none;border:0;color:var(--dim);cursor:pointer;font-size:.95rem;padding:2px 5px}
+.queue li button:hover:enabled{color:var(--glow)}
+.queue li button:disabled{opacity:.25;cursor:default}
+.floaters{position:fixed;inset:0;overflow:hidden;pointer-events:none!important;z-index:18}
+.floaters span{position:absolute;bottom:-60px;animation:float 3.5s ease-out forwards}
+@keyframes float{0%{transform:translate(0,0);opacity:0}10%{opacity:1}70%{opacity:1}100%{transform:translate(var(--drift),-75vh);opacity:0}}
+.score{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,80vw);max-height:90vh;overflow:auto;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 30px;backdrop-filter:blur(12px);z-index:6}
+.score h2{font-size:clamp(1.6rem,3vw,2.4rem);line-height:1.2;overflow-wrap:anywhere}
+.score .big{font-size:3.4rem;font-weight:800;color:var(--yellow);line-height:1.2}
+.hype{margin:14px 0}.bar{height:22px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar div{height:100%;width:0;background:linear-gradient(90deg,var(--yellow),var(--orange),var(--magenta));transition:width .1s linear}
+.score ol{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:6px;text-align:left}
+.score li{display:flex;justify-content:space-between;gap:10px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.07)}
+.recap{position:fixed;inset:0;z-index:15;overflow:auto;background:rgba(7,8,22,.92);padding:40px max(24px,calc(50vw - 480px)) 240px;text-align:center}
+.recap h2{font-size:2.6rem}
+.recap .setlist{text-align:left;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));margin:14px 0 24px}
+.hostWoofie{z-index:16}
 .empty{color:var(--dim)}
 .playerWrap{position:absolute;right:20px;bottom:24px;width:min(420px,34vw);min-width:200px;aspect-ratio:16/9;border:3px solid var(--glow);border-radius:14px;overflow:hidden;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .playerWrap iframe,.playerWrap>div{width:100%;height:100%}
@@ -31,9 +49,9 @@ html,body{height:100%;overflow:hidden}
 .nowbar{position:absolute;left:50%;top:20px;transform:translateX(-50%);text-align:center;text-shadow:0 2px 10px #000}
 .nowbar b{display:block;font-size:1.3rem}
 .nowbar span{color:var(--dim);font-size:.95rem}
-.hostWoofie{position:absolute;left:30px;bottom:20px}
+.hostWoofie{position:absolute;left:30px;bottom:20px;pointer-events:none!important}
 .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:.8rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 6px #000}
-.controls{position:absolute;left:20px;top:172px;display:flex;gap:8px}
+.controls{position:absolute;left:20px;top:172px;display:flex;gap:8px;flex-wrap:wrap;max-width:440px}
 .controls .btn{padding:8px 16px;font-size:.9rem}
 #start{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:20;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 26px;backdrop-filter:blur(10px)}
 #start[hidden]{display:none}
@@ -52,11 +70,26 @@ html,body{height:100%;overflow:hidden}
   <div class="controls">
     <button class="btn ghost" id="skip" title="Skip this song (N)">Skip</button>
     <button class="btn ghost" id="fs" title="Full screen (F)">Full screen</button>
+    <button class="btn ghost" id="mic" title="Let wallpapers hear the room and measure applause (M)" aria-pressed="false">Mic off</button>
+    <button class="btn ghost" id="end" title="Show tonight's recap">End night</button>
   </div>
   <div class="nowbar" id="nowbar" hidden><b id="nowTitle"></b><span id="nowName"></span></div>
   <aside class="queue"><h3>Up next</h3><ol id="qlist"></ol><p class="empty" id="qempty">Nobody yet. Scan the code to sing!</p></aside>
   <div class="playerWrap" id="playerWrap" hidden><div id="player"></div></div>
   <div class="lyrics" id="lyrics" aria-live="polite"><div class="now" id="lyNow"></div><div class="next" id="lyNext"></div></div>
+  <section class="score" id="score" hidden>
+    <p class="eyebrow">How was it? <span id="scoreTime"></span></p>
+    <h2 id="scoreName"></h2>
+    <div class="hype" id="hype"><p class="eyebrow">Applause <span id="hypeValue"></span></p><div class="bar"><div id="hypeFill"></div></div></div>
+    <div class="big" id="scoreStars"></div><p class="hint" id="scoreVotes"></p>
+    <ol id="leaders"></ol>
+  </section>
+  <section class="recap" id="recap" hidden>
+    <p class="eyebrow">That's a wrap</p><h2>Tonight's show</h2>
+    <div id="recapBody"></div>
+    <button class="btn big" id="resume">Keep singing</button>
+  </section>
+  <div class="floaters" id="floaters" aria-hidden="true"></div>
   <div class="hostWoofie" id="hostWoofie"></div>
   <div class="toast" id="toast"></div>
   <div class="demo" id="demo" hidden>Demo mode: signups only reach this browser. Add your Firebase config to go live.</div>

@@ -7,10 +7,34 @@
         "createdAt": { ".write": "auth != null && !data.exists()" },
         "queue": {
           "$id": {
-            ".write": "auth != null && (root.child('rooms/' + $room + '/host').val() === auth.uid || (!data.exists() && newData.child('owner').val() === auth.uid && newData.child('status').val() === 'queued') || (data.exists() && !newData.exists() && data.child('owner').val() === auth.uid))",
+            ".write": "auth != null && (root.child('rooms/' + $room + '/host').val() === auth.uid || (!data.exists() && newData.child('owner').val() === auth.uid && newData.child('status').val() === 'queued' && !newData.child('order').exists() && !newData.child('result').exists() && !newData.child('stars').exists() && !newData.child('votes').exists() && !newData.child('applause').exists() && !newData.child('reactions').exists()) || (data.child('owner').val() === auth.uid && data.child('status').val() === 'queued' && (!newData.exists() || (newData.child('owner').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('ts').val() === data.child('ts').val() && newData.child('order').val() === data.child('order').val() && newData.child('result').val() === data.child('result').val() && newData.child('stars').val() === data.child('stars').val() && newData.child('votes').val() === data.child('votes').val() && newData.child('applause').val() === data.child('applause').val() && newData.child('reactions').val() === data.child('reactions').val()))))",
             ".validate": "newData.hasChildren(['name', 'song', 'pick', 'ts', 'status', 'owner'])",
             "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24" },
+            "partner": { ".validate": "newData.isString() && newData.val().length <= 24" },
+            "dedication": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "ts": { ".validate": "newData.val() === now || (data.exists() && newData.val() === data.val())" },
             "status": { ".validate": "newData.val() === 'queued' || newData.val() === 'playing' || newData.val() === 'done'" }
+          }
+        },
+        "now": {
+          ".write": "auth != null && root.child('rooms/' + $room + '/host').val() === auth.uid",
+          "phase": { ".validate": "newData.val() === 'idle' || newData.val() === 'playing' || newData.val() === 'rating' || newData.val() === 'recap'" }
+        },
+        "reactions": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && newData.exists()",
+            ".validate": "newData.hasChildren(['e', 'ts']) && (!data.exists() || now - data.child('ts').val() > 700)",
+            "e": { ".validate": "newData.val() === 'heart' || newData.val() === 'fire' || newData.val() === 'clap' || newData.val() === 'star'" },
+            "ts": { ".validate": "newData.val() === now" },
+            "$other": { ".validate": false }
+          }
+        },
+        "ratings": {
+          "$entry": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('rooms/' + $room + '/now/phase').val() === 'rating' && root.child('rooms/' + $room + '/now/id').val() === $entry && root.child('rooms/' + $room + '/queue/' + $entry + '/owner').val() !== auth.uid",
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5 && newData.val() % 1 === 0"
+            }
           }
         }
       }
